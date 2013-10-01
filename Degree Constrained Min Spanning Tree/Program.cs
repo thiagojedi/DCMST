@@ -72,11 +72,11 @@ namespace DCMSC_Exact
 
         private void PrimDCST()
         {
-            int?[][] dcst = InicializaMatrix(ordem);
-            //int s = new Random().Next(0, ordem);
-            int s = 3;
+            
+            int s = new Random().Next(0, ordem);
 
             Dictionary<int, int> degrees = new Dictionary<int, int>();
+            List<Tuple<int, int>> edges = new List<Tuple<int, int>>();
             degrees.Add(s, 1);
 
             while (degrees.Count < ordem)
@@ -99,14 +99,17 @@ namespace DCMSC_Exact
                         }
                     }
                 }
-
-                dcst[start_node][final_node] = min;
-                dcst[final_node][start_node] = min;
                 degrees[start_node] += 1;
                 degrees.Add(final_node, 1);
+                edges.Add(Tuple.Create(start_node, final_node));
             }
-
-            PrintMatrix(dcst);
+            PrintEdges("MST", edges);
+            int cost = 0;
+            foreach (var edge in edges)
+            {
+                cost += (int)initial_matrix[edge.Item1][edge.Item2];
+            }
+            Console.WriteLine("Custo da árvore = {0}", cost);
         }
 
         static void PrintMatrix(int?[][] m)
@@ -125,16 +128,26 @@ namespace DCMSC_Exact
             }
         }
 
+        static void PrintEdges(string name, List<Tuple<int, int>> l)
+        {
+            Console.Write("{0} = ", name);
+            Console.Write("{");
+            foreach (var edge in l)
+            {
+                Console.Write("{0}-{1}, ", edge.Item1, edge.Item2);
+            }
+            Console.WriteLine("}");
+        }
+
 
         static void Main(string[] args)
         {
-            Program p = new Program(args[0], 3);
+            Program p = new Program(args[0], 5);
 
             Console.WriteLine();
             Console.WriteLine();
 
-            p.PrimDCST();
-            
+            p.PrimDCST();            
 
             Console.Read();
         }
