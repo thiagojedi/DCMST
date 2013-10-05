@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -22,9 +23,18 @@ namespace DCMSC_Exact
         {
             this.ordem = 0;
             this.degree = _degree;
+
+            Console.WriteLine("Árvore Geradora Mínima de Grau Restrito");
+            Console.WriteLine("---------------------------------------");
+
+            Console.WriteLine("Grau Máximo: {0}", degree);
+
             initial_matrix = this.CriaMatrix(s);
 
-            PrintMatrix(initial_matrix);
+            Console.WriteLine("Ordem da Matriz: {0}", ordem);
+            Console.WriteLine("Matriz:");
+
+            PrintMatrix(initial_matrix, true);
         }
 
         /// <summary>
@@ -38,8 +48,7 @@ namespace DCMSC_Exact
             {
                 string linha = testcase.ReadLine();
                 ordem = int.Parse(linha);
-                Console.WriteLine("Ordem: " + ordem.ToString());
-                Console.WriteLine("Criando array");
+                Debug.Print("Criando array");
                 int?[][] matrix = InicializaMatrix(ordem);
                 for (int i = 0; i < ordem; i++)
                 {
@@ -70,28 +79,30 @@ namespace DCMSC_Exact
         }
 
 
-        private void PrimDCST()
+        /// <summary>
+        /// Calcula uma Árvore de Cobertura com Grau Restrito utilizando o algoritmo de Prim. Não há garantia que é de custo mínimo.
+        /// </summary>
+        private List<Tuple<int,int>> PrimDCST()
         {
-            
             int s = new Random().Next(0, ordem);
 
-            Dictionary<int, int> degrees = new Dictionary<int, int>();
+            Dictionary<int, int> vertexes_with_degrees = new Dictionary<int, int>();
             List<Tuple<int, int>> edges = new List<Tuple<int, int>>();
-            degrees.Add(s, 1);
+            vertexes_with_degrees.Add(s, 1);
 
-            while (degrees.Count < ordem)
+            while (vertexes_with_degrees.Count < ordem)
             {
                 int min = int.MaxValue;
                 int start_node = 0;
                 int final_node = 0;
 
-                foreach (var item in degrees)
+                foreach (var item in vertexes_with_degrees)
                 {
                     int vertex = item.Key;
 
                     for (int i = 0; i < ordem; i++)
                     {
-                        if (initial_matrix[vertex][i] < min && !degrees.ContainsKey(i) && degrees[vertex] <= this.degree)
+                        if (initial_matrix[vertex][i] < min && !vertexes_with_degrees.ContainsKey(i) && vertexes_with_degrees[vertex] <= this.degree)
                         {
                             min = (int)initial_matrix[vertex][i];
                             start_node = vertex;
@@ -99,55 +110,140 @@ namespace DCMSC_Exact
                         }
                     }
                 }
-                degrees[start_node] += 1;
-                degrees.Add(final_node, 1);
-                edges.Add(Tuple.Create(start_node, final_node));
+                vertexes_with_degrees[start_node] += 1;
+                vertexes_with_degrees.Add(final_node, 1);
+                if (start_node < final_node)
+                    edges.Add(Tuple.Create(start_node, final_node));
+                else
+                    edges.Add(Tuple.Create(final_node, start_node));
             }
-            PrintEdges("MST", edges);
-            int cost = 0;
-            foreach (var edge in edges)
-            {
-                cost += (int)initial_matrix[edge.Item1][edge.Item2];
-            }
-            Console.WriteLine("Custo da árvore = {0}", cost);
+            PrintEdges("Prim's MST", edges);
+            return edges;
         }
 
-        static void PrintMatrix(int?[][] m)
+        void Branch()
         {
+            var nxy = this.PrimDCST();
+            List<Tuple<int, int>> x = new List<Tuple<int, int>>();
+            List<Tuple<int, int>> y = new List<Tuple<int, int>>();
+
+            Dictionary<int, int> vertex_with_degrees = new Dictionary<int, int>();
+
+            foreach (var edge in nxy)
+            {
+                if (((vertex_with_degrees.ContainsKey(edge.Item1) && vertex_with_degrees[edge.Item1] > this.degree)) ||
+                    ((vertex_with_degrees.ContainsKey(edge.Item2) && vertex_with_degrees[edge.Item2] > this.degree)))
+                {
+                    break;                    
+                }
+                x.Add(edge);
+                if (vertex_with_degrees.ContainsKey(edge.Item1))
+                    vertex_with_degrees[edge.Item1] += 1;
+                else
+                    vertex_with_degrees.Add(edge.Item1, 1);
+
+                if (vertex_with_degrees.ContainsKey(edge.Item2))
+                    vertex_with_degrees[edge.Item2] += 1;
+                else
+                    vertex_with_degrees.Add(edge.Item2, 1);
+            }
+
+        }
+
+
+
+
+        static void PrintMatrix(int?[][] m, bool to_console = false)
+        {
+            StringBuilder sb_message = new StringBuilder();
             foreach (var i in m)
             {
                 foreach (var j in i)
                 {
                     if (null != j)
-                        Console.Write(string.Format("{0,4}", j));
+                        sb_message.AppendFormat("{0,4}", j);
                     else
-                        Console.Write("   -");
-                    Console.Write(" ");
+                        sb_message.Append("   -");
+                    sb_message.Append(" ");
                 }
-                Console.WriteLine();
+                sb_message.AppendLine();
             }
+            if (to_console)
+                Console.WriteLine(sb_message);
+            //Debug.Print(sb_message.ToString());
         }
 
-        static void PrintEdges(string name, List<Tuple<int, int>> l)
+        static void PrintEdges(string name, List<Tuple<int, int>> l, bool to_console = false)
         {
-            Console.Write("{0} = ", name);
-            Console.Write("{");
+            StringBuilder sb_message = new StringBuilder();
+            sb_message.AppendFormat("{0} = ", name);
+            sb_message.Append("{");
             foreach (var edge in l)
             {
-                Console.Write("{0}-{1}, ", edge.Item1, edge.Item2);
+                sb_message.AppendFormat("{0}-{1}, ", edge.Item1, edge.Item2);
             }
-            Console.WriteLine("}");
+            sb_message.AppendLine("}");
+
+            if(to_console)
+                Console.WriteLine(sb_message);
+            Debug.Print(sb_message.ToString());
+        }
+
+        int Cost(List<Tuple<int, int>> l)
+        {
+            int cost = 0;
+            foreach (var edge in l)
+            {
+                cost += (int)initial_matrix[edge.Item1][edge.Item2];
+            }
+            Debug.Print("Custo da árvore = {0}", cost);
+            return cost;
+        }
+
+        int NonCrescentCostSort(Tuple<int, int> t1, Tuple<int, int> t2)
+        {
+            int x = PenalityOfEdge(t1);
+            int y = PenalityOfEdge(t2);
+            return y.CompareTo(x);
+
+        }
+
+        int PenalityOfEdge(Tuple<int, int> t)
+        {
+            int min = int.MaxValue;
+            int min_i = 0;
+            int min_j = 0;
+            for (int i = 0; i < ordem; i++)
+            {
+                if (i != t.Item1 && i != t.Item2)
+                {
+                    if ((int)initial_matrix[t.Item1][i] < min)
+                    {
+                        min = (int)initial_matrix[t.Item1][i];
+                        min_i = t.Item1;
+                        min_j = i;
+                    }
+                    if ((int)initial_matrix[t.Item2][i] < min)
+                    {
+                        min = (int)initial_matrix[t.Item2][i];
+                        min_i = t.Item2;
+                        min_j = i;
+                    }
+                }
+            }
+            int penality = (int)initial_matrix[t.Item1][t.Item2] - min;
+            Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", t.Item1, t.Item2, (int)initial_matrix[t.Item1][t.Item2], min_i, min_j, min, penality);
+            return penality;
         }
 
 
         static void Main(string[] args)
         {
-            Program p = new Program(args[0], 5);
+            Program p = new Program(args[0], 3);
 
-            Console.WriteLine();
-            Console.WriteLine();
+            p.PrimDCST();
 
-            p.PrimDCST();            
+            //Limite superior
 
             Console.Read();
         }
