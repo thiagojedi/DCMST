@@ -31,6 +31,7 @@ namespace DCMSC_Exact
         {
             StringBuilder sb_message = new StringBuilder();
             foreach (var i in m)
+            {
                 foreach (var j in i)
                 {
                     if (null != j)
@@ -39,7 +40,8 @@ namespace DCMSC_Exact
                         sb_message.Append("   -");
                     sb_message.Append(" ");
                 }
-            sb_message.AppendLine();
+                sb_message.AppendLine();
+            }
             if (to_console)
                 Console.WriteLine(sb_message);
             else
