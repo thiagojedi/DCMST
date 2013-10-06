@@ -18,9 +18,7 @@ namespace DCMSC_Exact
         {
             int?[][] matrix = new int?[o][];
             for (int i = 0; i < o; i++)
-            {
                 matrix[i] = new int?[o];
-            }
             return matrix;
         }
 
@@ -33,7 +31,6 @@ namespace DCMSC_Exact
         {
             StringBuilder sb_message = new StringBuilder();
             foreach (var i in m)
-            {
                 foreach (var j in i)
                 {
                     if (null != j)
@@ -42,8 +39,7 @@ namespace DCMSC_Exact
                         sb_message.Append("   -");
                     sb_message.Append(" ");
                 }
-                sb_message.AppendLine();
-            }
+            sb_message.AppendLine();
             if (to_console)
                 Console.WriteLine(sb_message);
             else
@@ -62,14 +58,15 @@ namespace DCMSC_Exact
             StringBuilder sb_message = new StringBuilder();
             sb_message.AppendFormat("{0} = ", name);
             sb_message.Append("{");
+
             foreach (var edge in l)
-            {
                 sb_message.AppendFormat("{0}-{1}, ", edge.Item1 + 1, edge.Item2 + 1);
-            }
+
             sb_message.AppendLine("}");
 
             if (to_console)
                 Console.WriteLine(sb_message);
+
             Debug.Print(sb_message.ToString());
         }
 
@@ -97,9 +94,8 @@ namespace DCMSC_Exact
         {
             int cost = 0;
             foreach (var edge in l)
-            {
                 cost += (int)matrix[edge.Item1][edge.Item2];
-            }
+
             Debug.Print("Custo da árvore = {0}", cost);
             return cost;
         }
