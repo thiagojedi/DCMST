@@ -11,10 +11,10 @@ namespace DCMSC_Exact
     class Program
     {
 
-        int?[][] initial_matrix;
         int ordem;
         int degree;
 
+        int?[][] initial_matrix;
         List<Tuple<int, int>> nxy;
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace DCMSC_Exact
             Console.WriteLine("Ordem da Matriz: {0}", ordem);
             Console.WriteLine("Matriz:");
 
-            PrintMatrix(initial_matrix, true);
+            Helpers.PrintMatrix(initial_matrix, true);
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace DCMSC_Exact
                 string linha = testcase.ReadLine();
                 ordem = int.Parse(linha);
                 Debug.Print("Criando array");
-                int?[][] matrix = InicializaMatrix(ordem);
+                int?[][] matrix = Helpers.InicializaMatrix(ordem);
                 for (int i = 0; i < ordem; i++)
                 {
                     string[] row = testcase.ReadLine().Split(' ');
@@ -64,22 +64,6 @@ namespace DCMSC_Exact
                 return matrix;
             }
         }
-
-        /// <summary>
-        /// Inicializa uma nova matriz quadrada de ordem <paramref name="o"/>.
-        /// </summary>
-        /// <param name="o">Ordem da matriz quadrada</param>
-        /// <returns>Uma nova matriz quadrada</returns>
-        private static int?[][] InicializaMatrix(int o)
-        {
-            int?[][] matrix = new int?[o][];
-            for (int i = 0; i < o; i++)
-            {
-                matrix[i] = new int?[o];
-            }
-            return matrix;
-        }
-
 
         /// <summary>
         /// Calcula uma Árvore de Cobertura com Grau Restrito utilizando o algoritmo de Prim. Não há garantia que é de custo mínimo.
@@ -120,14 +104,14 @@ namespace DCMSC_Exact
                 else
                     edges.Add(Tuple.Create(final_node, start_node));
             }
-            PrintEdges("Prim's MST", edges);
+            Helpers.PrintEdges("Prim's MST", edges);
             return edges;
         }
 
         void Branch()
         {
             nxy = this.PrimDCST();
-            PrintEdges("NXY", nxy);
+            Helpers.PrintEdges("NXY", nxy);
             InsertionSortByPenalty(ref nxy);
 
             List<Tuple<int, int>> x = new List<Tuple<int, int>>();
@@ -162,11 +146,11 @@ namespace DCMSC_Exact
                 }
             }
 
-            PrintEdges("X", x);
+            Helpers.PrintEdges("X", x);
 
             for (int i = 0; i < ordem; i++)
             {
-                bool ja_coberto = CoveredEdge(x, i, aux_y);
+                bool ja_coberto = Helpers.CoveredEdge(x, i, aux_y);
                 if (!ja_coberto && i != aux_y)
                     if (i < aux_y)
                         y.Add(Tuple.Create(i, aux_y));
@@ -175,61 +159,14 @@ namespace DCMSC_Exact
 
             }
 
-            PrintEdges("Y", y);
+            Helpers.PrintEdges("Y", y);
         }
-
-        static void PrintMatrix(int?[][] m, bool to_console = false)
-        {
-            StringBuilder sb_message = new StringBuilder();
-            foreach (var i in m)
-            {
-                foreach (var j in i)
-                {
-                    if (null != j)
-                        sb_message.AppendFormat("{0,4}", j);
-                    else
-                        sb_message.Append("   -");
-                    sb_message.Append(" ");
-                }
-                sb_message.AppendLine();
-            }
-            if (to_console)
-                Console.WriteLine(sb_message);
-            //Debug.Print(sb_message.ToString());
-        }
-
-        static void PrintEdges(string name, List<Tuple<int, int>> l, bool to_console = false)
-        {
-            StringBuilder sb_message = new StringBuilder();
-            sb_message.AppendFormat("{0} = ", name);
-            sb_message.Append("{");
-            foreach (var edge in l)
-            {
-                sb_message.AppendFormat("{0}-{1}, ", edge.Item1+1, edge.Item2+1);
-            }
-            sb_message.AppendLine("}");
-
-            if(to_console)
-                Console.WriteLine(sb_message);
-            Debug.Print(sb_message.ToString());
-        }
-
-        int Cost(List<Tuple<int, int>> l)
-        {
-            int cost = 0;
-            foreach (var edge in l)
-            {
-                cost += (int)initial_matrix[edge.Item1][edge.Item2];
-            }
-            Debug.Print("Custo da árvore = {0}", cost);
-            return cost;
-        }
-
-        int DecrescentCostSort(Tuple<int, int> t1, Tuple<int, int> t2)
-        {
-            return PenalityOfEdge(t1).CompareTo(PenalityOfEdge(t2));
-        }
-
+        
+        /// <summary>
+        /// Função de ordenação da lista de arestas <paramref name="l"/> 
+        /// com base na penalidade das arestas
+        /// </summary>
+        /// <param name="l">Lista a ser ordenada</param>
         void InsertionSortByPenalty(ref List<Tuple<int, int>> l)
         {
             Dictionary<Tuple<int, int>, int> dic = new Dictionary<Tuple<int, int>, int>();
@@ -285,10 +222,9 @@ namespace DCMSC_Exact
             }
 
             foreach (var x in vs_in_t1)
-            {
                 foreach (var y in vs_in_t2)
                 {
-                    bool existe = CoveredEdge(nxy, x, y);
+                    bool existe = Helpers.CoveredEdge(nxy, x, y);
                     if (!existe && min > (int)initial_matrix[x][y])
                     {
                         min = (int)initial_matrix[x][y];
@@ -296,25 +232,19 @@ namespace DCMSC_Exact
                         min_j = y;
                     }
                 }
-            }
 
             int penality = (int)initial_matrix[t.Item1][t.Item2] -min;
             Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", t.Item1+1, t.Item2+1, (int)initial_matrix[t.Item1][t.Item2], min_i+1, min_j+1, min, penality);
             return penality;
         }
 
-        bool CoveredEdge(List<Tuple<int, int>> l, int a, int b)
-        {
-            return l.Exists(i =>                        (i.Item1 == a && i.Item2 == b) || (i.Item1 == b && i.Item2 == a));
-        }
+        
 
         static void Main(string[] args)
         {
             Program p = new Program(args[0], 3);
 
             p.Branch();
-
-            
 
             Console.Read();
         }
