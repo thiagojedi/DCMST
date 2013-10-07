@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -100,6 +101,40 @@ namespace DCMSC_Exact
 
             Debug.Print("Custo da árvore = {0}", cost);
             return cost;
+        }
+
+        /// <summary>
+        /// Cria uma matriz quadrada a partir do arquivo de teste passado.
+        /// </summary>
+        /// <param name="filepath">Endereço do arquivo de teste. Pode ser relativo ou absoluto.</param>
+        /// <returns>Matriz quadrada preenchida de acordo com o arquivo de teste.</returns>
+        public static int?[][] CriaMatrix(string filepath, ref int ordem)
+        {
+            int?[][] matrix = Helpers.InicializaMatrix(ordem);
+            using (StreamReader testcase = new StreamReader(filepath))
+            {
+                string linha = testcase.ReadLine();
+                ordem = int.Parse(linha);
+                Debug.Print("Criando array");
+                for (int i = 0; i < ordem; i++)
+                {
+                    string[] row = testcase.ReadLine().Split(' ');
+                    for (int j = 0; j < i; j++)
+                    {
+                        matrix[i][j] = int.Parse(row[j]);
+                        matrix[j][i] = matrix[i][j];
+                    }
+                }
+            }
+            return matrix;
+        }
+
+        public static void AddEdge(int i, int j, ref List<Tuple<int, int>> l)
+        {
+            if (i < j)
+                l.Add(Tuple.Create(i,j));
+            else
+                l.Add(Tuple.Create(j,i));
         }
     }
 }

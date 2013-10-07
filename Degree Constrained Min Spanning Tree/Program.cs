@@ -68,7 +68,7 @@ namespace DCMSC_Exact
         /// <summary>
         /// Calcula uma Árvore de Cobertura com Grau Restrito utilizando o algoritmo de Prim. Não há garantia que é de custo mínimo.
         /// </summary>
-        private List<Tuple<int,int>> PrimDCST()
+        private List<Tuple<int, int>> PrimDCST()
         {
             int s = 0;
 
@@ -99,10 +99,7 @@ namespace DCMSC_Exact
                 }
                 vertexes_with_degrees[start_node] += 1;
                 vertexes_with_degrees.Add(final_node, 1);
-                if (start_node < final_node)
-                    edges.Add(Tuple.Create(start_node, final_node));
-                else
-                    edges.Add(Tuple.Create(final_node, start_node));
+                Helpers.AddEdge(start_node, final_node, ref edges);
             }
             Helpers.PrintEdges("Prim's MST", edges);
             return edges;
@@ -122,7 +119,7 @@ namespace DCMSC_Exact
             int aux_y = 0;
 
             foreach (var edge in nxy)
-            {    
+            {
                 x.Add(edge);
                 if (vertex_with_degrees.ContainsKey(edge.Item1))
                     vertex_with_degrees[edge.Item1] += 1;
@@ -160,8 +157,53 @@ namespace DCMSC_Exact
             }
 
             Helpers.PrintEdges("Y", y);
+
+            CompleteMST(x, y);
         }
-        
+
+        List<Tuple<int,int>> CompleteMST(List<Tuple<int, int>> include, List<Tuple<int, int>> exclude)
+        {
+            Dictionary<int, int> vertex_with_degree = new Dictionary<int, int>();
+            List<Tuple<int, int>> edges = new List<Tuple<int, int>>(include);
+
+            foreach (var edge in edges)
+            {
+                if (!vertex_with_degree.ContainsKey(edge.Item1))
+                    vertex_with_degree.Add(edge.Item1, 0);
+                vertex_with_degree[edge.Item1] += 1;
+
+                if (!vertex_with_degree.ContainsKey(edge.Item2))
+                    vertex_with_degree.Add(edge.Item2, 0);
+                vertex_with_degree[edge.Item2] += 1;
+            }
+
+            while (vertex_with_degree.Count < ordem)
+            {
+                int min = int.MaxValue;
+                int start_node = 0;
+                int final_node = 0;
+
+                foreach (var item in vertex_with_degree.OrderBy(x => x.Key))
+                {
+                    int vertex = item.Key;
+                    for (int i = 0; i < ordem; i++)
+                        if (initial_matrix[vertex][i] < min && !Helpers.CoveredEdge(exclude, vertex, i) && !vertex_with_degree.ContainsKey(i))
+                        {
+                            min = (int)initial_matrix[vertex][i];
+                            start_node = vertex;
+                            final_node = i;
+                        }
+                }
+                vertex_with_degree[start_node] += 1;
+                vertex_with_degree.Add(final_node, 1);
+
+                Helpers.AddEdge(start_node, final_node, ref edges);
+            }
+            Helpers.PrintEdges("Nova MST", edges);
+
+            return edges;
+        }
+
         /// <summary>
         /// Função de ordenação da lista de arestas <paramref name="l"/> 
         /// com base na penalidade das arestas
@@ -233,12 +275,12 @@ namespace DCMSC_Exact
                     }
                 }
 
-            int penality = (int)initial_matrix[t.Item1][t.Item2] -min;
-            Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", t.Item1+1, t.Item2+1, (int)initial_matrix[t.Item1][t.Item2], min_i+1, min_j+1, min, penality);
+            int penality = (int)initial_matrix[t.Item1][t.Item2] - min;
+            Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", t.Item1 + 1, t.Item2 + 1, (int)initial_matrix[t.Item1][t.Item2], min_i + 1, min_j + 1, min, penality);
             return penality;
         }
 
-        
+
 
         static void Main(string[] args)
         {
@@ -249,6 +291,6 @@ namespace DCMSC_Exact
             Console.Read();
         }
 
-        
+
     }
 }
