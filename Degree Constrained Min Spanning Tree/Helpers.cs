@@ -107,15 +107,16 @@ namespace DCMSC_Exact
         /// Cria uma matriz quadrada a partir do arquivo de teste passado.
         /// </summary>
         /// <param name="filepath">Endereço do arquivo de teste. Pode ser relativo ou absoluto.</param>
+        /// <param name="ordem">Parâmetro de saída para a ordem da matriz</param>
         /// <returns>Matriz quadrada preenchida de acordo com o arquivo de teste.</returns>
         public static int?[][] CriaMatrix(string filepath, ref int ordem)
         {
-            int?[][] matrix = Helpers.InicializaMatrix(ordem);
             using (StreamReader testcase = new StreamReader(filepath))
             {
                 string linha = testcase.ReadLine();
                 ordem = int.Parse(linha);
                 Debug.Print("Criando array");
+                int?[][] matrix = Helpers.InicializaMatrix(ordem);
                 for (int i = 0; i < ordem; i++)
                 {
                     string[] row = testcase.ReadLine().Split(' ');
@@ -125,8 +126,8 @@ namespace DCMSC_Exact
                         matrix[j][i] = matrix[i][j];
                     }
                 }
+                return matrix;
             }
-            return matrix;
         }
 
         public static void AddEdge(int i, int j, ref List<Tuple<int, int>> l)
@@ -135,6 +136,24 @@ namespace DCMSC_Exact
                 l.Add(Tuple.Create(i,j));
             else
                 l.Add(Tuple.Create(j,i));
+        }
+
+        public static bool Possivel(List<Tuple<int, int>> l, int d)
+        {
+            bool possivel = true;
+            Dictionary<int, int> v = new Dictionary<int, int>();
+            foreach (var e in l)
+            {
+                if (!v.ContainsKey(e.Item1))
+                    v.Add(e.Item1, 0);
+                v[e.Item1] += 1;
+                if (!v.ContainsKey(e.Item2))
+                    v.Add(e.Item2, 0);
+                v[e.Item2] += 1;
+                if (v[e.Item1] > d || v[e.Item2] > d)
+                    possivel = false;
+            }
+            return possivel;
         }
     }
 }
