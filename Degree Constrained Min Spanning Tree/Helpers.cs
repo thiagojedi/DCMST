@@ -133,9 +133,9 @@ namespace DCMSC_Exact
         public static void AddEdge(int i, int j, ref List<Tuple<int, int>> l)
         {
             if (i < j)
-                l.Add(Tuple.Create(i,j));
+                l.Add(Tuple.Create(i, j));
             else
-                l.Add(Tuple.Create(j,i));
+                l.Add(Tuple.Create(j, i));
         }
 
         public static bool Possivel(List<Tuple<int, int>> l, int d)
@@ -145,11 +145,13 @@ namespace DCMSC_Exact
             foreach (var e in l)
             {
                 if (!v.ContainsKey(e.Item1))
-                    v.Add(e.Item1, 0);
-                v[e.Item1] += 1;
+                    v.Add(e.Item1, 1);
+                else
+                    v[e.Item1] += 1;
                 if (!v.ContainsKey(e.Item2))
-                    v.Add(e.Item2, 0);
-                v[e.Item2] += 1;
+                    v.Add(e.Item2, 1);
+                else
+                    v[e.Item2] += 1;
                 if (v[e.Item1] > d || v[e.Item2] > d)
                     possivel = false;
             }

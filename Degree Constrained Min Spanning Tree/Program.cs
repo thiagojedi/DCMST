@@ -15,7 +15,6 @@ namespace DCMSC_Exact
         int degree;
 
         int?[][] initial_matrix;
-        List<List<Tuple<int, int>>> nxy;
 
         int upper_bound;
 
@@ -34,32 +33,26 @@ namespace DCMSC_Exact
             this.ordem = 0;
             this.index = 0;
             this.degree = _degree;
-            this.nxy = new List<List<Tuple<int, int>>>();
             this.right_bound = new List<int>();
             this.left_bound = new List<int>();
             #endregion
 
-            Console.WriteLine("Árvore Geradora Mínima de Grau Restrito");
-            Console.WriteLine("---------------------------------------");
-
             Console.WriteLine("Grau Máximo: {0}", degree);
 
-            initial_matrix = Helpers.CriaMatrix(s, ref ordem);
+            this.initial_matrix = Helpers.CriaMatrix(s, ref ordem);
 
             Console.WriteLine("Ordem da Matriz: {0}", ordem);
-            Console.WriteLine("Matriz:");
+            //Console.WriteLine("Matriz:");
 
-            Helpers.PrintMatrix(initial_matrix, true);
+            Helpers.PrintMatrix(this.initial_matrix, false);
         }
 
         /// <summary>
         /// Calcula uma Árvore de Cobertura com Grau Restrito utilizando o algoritmo de Prim. Não há garantia que é de custo mínimo.
         /// </summary>
         /// <returns>Uma Árvore de Cobertura com Grau Restrito</returns>
-        private List<Tuple<int, int>> PrimDegreeConstrained()
+        private List<Tuple<int, int>> PrimDegreeConstrained(int s)
         {
-            int s = new Random().Next(degree);
-
             Dictionary<int, int> vertexes_with_degrees = new Dictionary<int, int>();
             List<Tuple<int, int>> edges = new List<Tuple<int, int>>();
 
@@ -77,9 +70,9 @@ namespace DCMSC_Exact
 
                     for (int i = 0; i < ordem; i++)
                     {
-                        if (!vertexes_with_degrees.ContainsKey(i) && initial_matrix[vertex][i] < min && vertexes_with_degrees[vertex] < this.degree)
+                        if (!vertexes_with_degrees.ContainsKey(i) && this.initial_matrix[vertex][i] < min && vertexes_with_degrees[vertex] < this.degree)
                         {
-                            min = (int)initial_matrix[vertex][i];
+                            min = (int)this.initial_matrix[vertex][i];
                             start_node = vertex;
                             final_node = i;
                         }
@@ -93,26 +86,24 @@ namespace DCMSC_Exact
             return edges;
         }
 
-        List<Tuple<int, int>> Prim()
+        List<Tuple<int, int>> Prim(int s)
         {
-            int s = new Random().Next(degree);
-
             List<int> vertexes = new List<int>();
             List<Tuple<int, int>> edges = new List<Tuple<int, int>>();
 
             vertexes.Add(s);
 
-            while (vertexes.Count < ordem)
+            while (vertexes.Count < this.ordem)
             {
                 int min = int.MaxValue;
                 int start_node = 0;
                 int final_node = 0;
 
                 foreach (var vertex in vertexes)
-                    for (int i = 0; i < ordem; i++)
-                        if (!vertexes.Contains(i) && initial_matrix[vertex][i] < min)
+                    for (int i = 0; i < this.ordem; i++)
+                        if (!vertexes.Contains(i) && this.initial_matrix[vertex][i] < min)
                         {
-                            min = (int)initial_matrix[vertex][i];
+                            min = (int)this.initial_matrix[vertex][i];
                             start_node = vertex;
                             final_node = i;
                         }
@@ -123,32 +114,22 @@ namespace DCMSC_Exact
             return edges;
         }
 
-        void BranchAndBound()
+        void GenerateXY(ref List<Tuple<int, int>> x, ref List<Tuple<int, int>> y, List<Tuple<int, int>> nxy)
         {
-            //Step 1
-            upper_bound = Helpers.Cost(this.PrimDegreeConstrained(), initial_matrix);
-            Console.WriteLine("Upper bound inicial: {0}", upper_bound);
-            index = 0;
-
-            //Step 2
-            List<Tuple<int, int>> aux_nxy = Prim();
-            right_bound.Insert(index, Helpers.Cost(aux_nxy, initial_matrix));
-            left_bound.Insert(index, int.MaxValue);
-
-            index += 1;
-
-            List<Tuple<int, int>> x = new List<Tuple<int, int>>();
-            List<Tuple<int, int>> y = new List<Tuple<int, int>>();
+            int node_to_y = 0;
             Dictionary<int, int> vertex_with_degrees = new Dictionary<int, int>();
+            foreach (var edge in x)
+            {
+                if (!vertex_with_degrees.ContainsKey(edge.Item1))
+                    vertex_with_degrees.Add(edge.Item1, 0);
+                vertex_with_degrees[edge.Item1] += 1;
 
-        Step3:
-            InsertionSortByPenalty(ref aux_nxy);
-            nxy.Add(new List<Tuple<int,int>>(aux_nxy));
-            aux_nxy.RemoveAll(f => Helpers.CoveredEdge(x, f.Item1, f.Item2));
+                if (!vertex_with_degrees.ContainsKey(edge.Item2))
+                    vertex_with_degrees.Add(edge.Item2, 0);
+                vertex_with_degrees[edge.Item2] += 1;
+            }
 
-            int aux_y = 0;
-
-            foreach (var edge in aux_nxy)
+            foreach (var edge in nxy)
             {
                 if (!Helpers.CoveredEdge(x, edge.Item1, edge.Item2))
                     x.Add(edge);
@@ -163,40 +144,76 @@ namespace DCMSC_Exact
 
                 if (vertex_with_degrees[edge.Item1] == this.degree)
                 {
-                    aux_y = edge.Item1;
+                    node_to_y = edge.Item1;
                     break;
                 }
                 if (vertex_with_degrees[edge.Item2] == this.degree)
                 {
-                    aux_y = edge.Item2;
+                    node_to_y = edge.Item2;
                     break;
                 }
             }
-
             for (int i = 0; i < ordem; i++)
             {
-                bool ja_coberto = Helpers.CoveredEdge(x, i, aux_y) || Helpers.CoveredEdge(y, i, aux_y);
-                if (!ja_coberto && i != aux_y)
-                    if (i < aux_y)
-                        y.Add(Tuple.Create(i, aux_y));
+                bool ja_coberto = Helpers.CoveredEdge(x, i, node_to_y) || Helpers.CoveredEdge(y, i, node_to_y);
+                if (!ja_coberto && i != node_to_y)
+                    if (i < node_to_y)
+                        y.Add(Tuple.Create(i, node_to_y));
                     else
-                        y.Add(Tuple.Create(aux_y, i));
+                        y.Add(Tuple.Create(node_to_y, i));
 
             }
+        }
 
-            aux_nxy = CompleteMST(x, y);
+        void BranchAndBound()
+        {
+            //int start = new Random().Next(ordem);
+            int start = ordem-1;
 
-            right_bound.Insert(index, Helpers.Cost(aux_nxy, initial_matrix));
-            left_bound.Insert(index, right_bound[index - 1] - PenalityOfEdge(x.Last(), nxy[index-1]));
+            //Step 1
+            upper_bound = Helpers.Cost(this.PrimDegreeConstrained(start), this.initial_matrix);
+            Console.WriteLine("Upper bound inicial: {0}", upper_bound);
+            index = 0;
+
+            //Step 2
+            List<Tuple<int, int>> not_in_xy = Prim(start);
+            right_bound.Insert(index, Helpers.Cost(not_in_xy, this.initial_matrix));
+            left_bound.Insert(index, int.MaxValue);
+
+            index += 1;
+
+            List<List<Tuple<int, int>>> spanning_trees = new List<List<Tuple<int, int>>>();
+            List<Tuple<int, int>> x = new List<Tuple<int, int>>();
+            List<Tuple<int, int>> y = new List<Tuple<int, int>>();
+
+        Step3:
+            InsertionSortByPenalty(ref not_in_xy);
+            not_in_xy.RemoveAll(f => Helpers.CoveredEdge(x, f.Item1, f.Item2));
+
+            List<Tuple<int, int>> old_y = new List<Tuple<int, int>>(y);
+            GenerateXY(ref x, ref y, not_in_xy);
+
+            Helpers.PrintEdges("X: ", x);
+            Helpers.PrintEdges("Y: ", y);
+
+            var complete = CompleteMST(x, y);
+            spanning_trees.Add(complete);
+
+            right_bound.Insert(index, Helpers.Cost(complete, this.initial_matrix));
+            left_bound.Insert(index, right_bound[index - 1] + PenaltyOfEdge(x.Last(), spanning_trees[index - 1]));
+
+            Debug.Print("Right Bound {1}: {0}", right_bound[index], index);
+            Debug.Print("Left Bound {1}: {0}", left_bound[index], index);
 
         Step4:
             if (right_bound[index] < upper_bound)
                 //Step 5
-                if (Helpers.Possivel(aux_nxy, degree))
+                if (Helpers.Possivel(complete, degree))
                     upper_bound = right_bound[index];
                 else
                 {
                     index += 1;
+                    not_in_xy = complete;
                     goto Step3;
                 }
 
@@ -206,19 +223,31 @@ namespace DCMSC_Exact
                 right_bound[index] = left_bound[index];
 
                 //Step 7
+                Tuple<int, int> ult_x = x.Last();
+                x.Remove(ult_x);
+                if (x.Count > 0)
+                {
+                    List<Tuple<int, int>> outro_nxy = new List<Tuple<int, int>>(not_in_xy);
+                    outro_nxy.Remove(ult_x);
+
+                    GenerateXY(ref x, ref old_y, outro_nxy);
+                    left_bound[index] = Helpers.Cost(CompleteMST(x, y), this.initial_matrix);
+                }
+                else
+                    left_bound[index] = int.MaxValue;
                 goto Step4;
             }
             else
             {
                 //Step 8
                 index -= 1;
-                if (index > 0)
+                if (index > -1)
                     goto Step6;
 
             }
 
-            Helpers.PrintEdges("Solução", aux_nxy, true);
-            Console.WriteLine("Custo da Solução: {0}", Helpers.Cost(aux_nxy, initial_matrix));
+            Helpers.PrintEdges("Solução", spanning_trees.Last(), true);
+            Console.WriteLine("Custo da Solução: {0}", Helpers.Cost(spanning_trees.Last(), this.initial_matrix));
         }
 
         /// <summary>
@@ -241,6 +270,8 @@ namespace DCMSC_Exact
                     vertexes.Add(edge.Item2);
             }
 
+            vertexes.Sort();
+
             while (vertexes.Count < ordem)
             {
                 int min = int.MaxValue;
@@ -250,9 +281,9 @@ namespace DCMSC_Exact
                 vertexes.Sort();
                 foreach (var vertex in vertexes)
                     for (int i = 0; i < ordem; i++)
-                        if (initial_matrix[vertex][i] < min && !Helpers.CoveredEdge(exclude, vertex, i) && !vertexes.Contains(i))
+                        if (this.initial_matrix[vertex][i] < min && !Helpers.CoveredEdge(exclude, vertex, i) && !vertexes.Contains(i))
                         {
-                            min = (int)initial_matrix[vertex][i];
+                            min = (int)this.initial_matrix[vertex][i];
                             start_node = vertex;
                             final_node = i;
                         }
@@ -260,7 +291,7 @@ namespace DCMSC_Exact
 
                 Helpers.AddEdge(start_node, final_node, ref edges);
             }
-            Helpers.PrintEdges("Nova MST", edges);
+            //Helpers.PrintEdges("Nova MST", edges);
 
             return edges;
         }
@@ -274,7 +305,7 @@ namespace DCMSC_Exact
         {
             Dictionary<Tuple<int, int>, int> dic = new Dictionary<Tuple<int, int>, int>();
             foreach (var edge in l)
-                dic.Add(edge, PenalityOfEdge(edge, l));
+                dic.Add(edge, PenaltyOfEdge(edge, l));
             List<Tuple<int, int>> nl = new List<Tuple<int, int>>();
             foreach (var edge in l)
                 if (nl.Count == 0)
@@ -294,65 +325,18 @@ namespace DCMSC_Exact
         /// </summary>
         /// <param name="edge">Aresta a ser calculada a penalidade</param>
         /// <returns>A penalidade da aresta</returns>
-        int PenalityOfEdge(Tuple<int, int> edge, List<Tuple<int, int>> lista)
+        int PenaltyOfEdge(Tuple<int, int> edge, List<Tuple<int, int>> tree)
         {
-            int min = int.MaxValue;
-            int min_i = 0;
-            int min_j = 0;
+            int min = Helpers.Cost(tree, this.initial_matrix);
 
-            List<Tuple<int, int>> t0 = new List<Tuple<int, int>>(lista);
-
-            t0.Remove(edge);
-
-            List<int> vs_in_t1 = new List<int>();
-            List<int> vs_in_t2 = new List<int>();
-
-            vs_in_t1.Add(edge.Item1);
-            vs_in_t2.Add(edge.Item2);
-
-            int i = 0;
-            while (t0.Count > 0)
-            {
-                var e = t0[i];
-                if (vs_in_t1.Contains(e.Item1))
-                {
-                    vs_in_t1.Add(e.Item2);
-                    t0.Remove(e);
-                }
-                else if (vs_in_t1.Contains(e.Item2))
-                {
-                    vs_in_t1.Add(e.Item1);
-                    t0.Remove(e);
-                }
-                else if (vs_in_t2.Contains(e.Item1))
-                {
-                    vs_in_t2.Add(e.Item2);
-                    t0.Remove(e);
-                }
-                else if (vs_in_t2.Contains(e.Item2))
-                {
-                    vs_in_t2.Add(e.Item1);
-                    t0.Remove(e);
-                }
-                i++;
-                if (i >= t0.Count)
-                    i = 0;
-            }
-
-            foreach (var x in vs_in_t1)
-                foreach (var y in vs_in_t2)
-                {
-                    bool existe = (edge.Item1 == x && edge.Item2 == y);
-                    if (!existe && min > (int)initial_matrix[x][y])
-                    {
-                        min = (int)initial_matrix[x][y];
-                        min_i = x;
-                        min_j = y;
-                    }
-                }
-
-            int penality = Math.Abs((int)initial_matrix[edge.Item1][edge.Item2] - min);
-            //Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", edge.Item1 + 1, edge.Item2 + 1, (int)initial_matrix[edge.Item1][edge.Item2], min_i + 1, min_j + 1, min, penality);
+            List<Tuple<int, int>> t1 = new List<Tuple<int, int>>();
+            List<Tuple<int, int>> t2 = new List<Tuple<int, int>>(tree);
+            t1.Add(edge);
+            t2.Remove(edge);
+            int max = Helpers.Cost(CompleteMST(t2, t1), this.initial_matrix);
+            
+            int penality = Math.Abs(max - min);
+            Debug.Print("Penalidade de Tuple {0}-{1} = {2}", edge.Item1 + 1, edge.Item2 + 1, penality);
             return penality;
         }
 
@@ -360,6 +344,9 @@ namespace DCMSC_Exact
 
         static void Main(string[] args)
         {
+            Console.WriteLine("Árvore Geradora Mínima de Grau Restrito");
+            Console.WriteLine("---------------------------------------");
+
             Console.WriteLine("Digite o nome do arquivo: ");
             string arquivo = Console.ReadLine();
             if (arquivo.Contains("40"))
@@ -368,12 +355,20 @@ namespace DCMSC_Exact
                 Console.WriteLine("Digite o grau máximo [5, 10, 20]: ");
             int grau = int.Parse(Console.ReadLine());
 
-            DateTime start = DateTime.Now;
-            Program p = new Program(arquivo, grau);
+            if (!arquivo.Contains(".txt"))
+                arquivo = arquivo + ".txt";
 
-            p.BranchAndBound();
+            //for (int i = 0; i < 5; i++)
+            //{
+                DateTime start = DateTime.Now;
+                Program p = new Program(arquivo, grau);
 
-            Console.WriteLine("Calculado em {0}s", (DateTime.Now - start).TotalSeconds);
+                p.BranchAndBound();
+
+                Console.WriteLine("Calculado em {0}s", (DateTime.Now - start).TotalSeconds);
+
+                Console.WriteLine();
+            //}
 
             Console.Read();
         }
