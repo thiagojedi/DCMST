@@ -119,7 +119,7 @@ namespace DCMSC_Exact
                 vertexes.Add(final_node);
                 Helpers.AddEdge(start_node, final_node, ref edges);
             }
-            Helpers.PrintEdges("Prim's DCST", edges);
+            Helpers.PrintEdges("Prim's MST", edges);
             return edges;
         }
 
@@ -127,6 +127,7 @@ namespace DCMSC_Exact
         {
             //Step 1
             upper_bound = Helpers.Cost(this.PrimDegreeConstrained(), initial_matrix);
+            Console.WriteLine("Upper bound inicial: {0}", upper_bound);
             index = 0;
 
             //Step 2
@@ -174,7 +175,7 @@ namespace DCMSC_Exact
 
             for (int i = 0; i < ordem; i++)
             {
-                bool ja_coberto = Helpers.CoveredEdge(x, i, aux_y);
+                bool ja_coberto = Helpers.CoveredEdge(x, i, aux_y) || Helpers.CoveredEdge(y, i, aux_y);
                 if (!ja_coberto && i != aux_y)
                     if (i < aux_y)
                         y.Add(Tuple.Create(i, aux_y));
@@ -185,13 +186,8 @@ namespace DCMSC_Exact
 
             aux_nxy = CompleteMST(x, y);
 
-            Helpers.PrintEdges("Complete", aux_nxy, true);
-
             right_bound.Insert(index, Helpers.Cost(aux_nxy, initial_matrix));
-            left_bound.Insert(index, right_bound[index - 1] - PenalityOfEdge(x.Last(), nxy[index - 1]));
-
-            Console.WriteLine("R {0}", right_bound[index]);
-            Console.WriteLine("L {0}", left_bound[index]);
+            left_bound.Insert(index, right_bound[index - 1] - PenalityOfEdge(x.Last(), nxy[index-1]));
 
         Step4:
             if (right_bound[index] < upper_bound)
@@ -286,7 +282,7 @@ namespace DCMSC_Exact
                 else
                 {
                     int i = 0;
-                    while (i < nl.Count && dic[edge] > dic[nl[i]])
+                    while (i < nl.Count && dic[edge] < dic[nl[i]])
                         i++;
                     nl.Insert(i, edge);
                 }
@@ -318,25 +314,25 @@ namespace DCMSC_Exact
             while (t0.Count > 0)
             {
                 var e = t0[i];
-                if (vs_in_t1.Contains(e.Item1) && !vs_in_t1.Contains(e.Item2))
+                if (vs_in_t1.Contains(e.Item1))
                 {
                     vs_in_t1.Add(e.Item2);
                     t0.Remove(e);
                     i = 0;
                 }
-                else if (vs_in_t1.Contains(e.Item2) && !vs_in_t1.Contains(e.Item1))
+                else if (vs_in_t1.Contains(e.Item2))
                 {
                     vs_in_t1.Add(e.Item1);
                     t0.Remove(e);
                     i = 0;
                 }
-                else if (vs_in_t2.Contains(e.Item1) && !vs_in_t2.Contains(e.Item2))
+                else if (vs_in_t2.Contains(e.Item1))
                 {
                     vs_in_t2.Add(e.Item2);
                     t0.Remove(e);
                     i = 0;
                 }
-                else if (vs_in_t2.Contains(e.Item2) && !vs_in_t2.Contains(e.Item1))
+                else if (vs_in_t2.Contains(e.Item2))
                 {
                     vs_in_t2.Add(e.Item1);
                     t0.Remove(e);
@@ -359,8 +355,8 @@ namespace DCMSC_Exact
                     }
                 }
 
-            int penality = (int)initial_matrix[edge.Item1][edge.Item2] - min;
-            Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", edge.Item1 + 1, edge.Item2 + 1, (int)initial_matrix[edge.Item1][edge.Item2], min_i + 1, min_j + 1, min, penality);
+            int penality = Math.Abs((int)initial_matrix[edge.Item1][edge.Item2] - min);
+            //Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", edge.Item1 + 1, edge.Item2 + 1, (int)initial_matrix[edge.Item1][edge.Item2], min_i + 1, min_j + 1, min, penality);
             return penality;
         }
 
@@ -368,9 +364,12 @@ namespace DCMSC_Exact
 
         static void Main(string[] args)
         {
-            Program p = new Program(args[0], 3);
+            DateTime start = DateTime.Now;
+            Program p = new Program(args[0], 8);
 
             p.BranchAndBound();
+
+            Console.WriteLine("Calculado em {0}s", (DateTime.Now - start).TotalSeconds);
 
             Console.Read();
         }
