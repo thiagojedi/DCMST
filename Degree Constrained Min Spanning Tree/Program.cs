@@ -58,7 +58,7 @@ namespace DCMSC_Exact
         /// <returns>Uma Árvore de Cobertura com Grau Restrito</returns>
         private List<Tuple<int, int>> PrimDegreeConstrained()
         {
-            int s = 0;
+            int s = new Random().Next(degree);
 
             Dictionary<int, int> vertexes_with_degrees = new Dictionary<int, int>();
             List<Tuple<int, int>> edges = new List<Tuple<int, int>>();
@@ -95,7 +95,7 @@ namespace DCMSC_Exact
 
         List<Tuple<int, int>> Prim()
         {
-            int s = 0;
+            int s = new Random().Next(degree);
 
             List<int> vertexes = new List<int>();
             List<Tuple<int, int>> edges = new List<Tuple<int, int>>();
@@ -318,29 +318,25 @@ namespace DCMSC_Exact
                 {
                     vs_in_t1.Add(e.Item2);
                     t0.Remove(e);
-                    i = 0;
                 }
                 else if (vs_in_t1.Contains(e.Item2))
                 {
                     vs_in_t1.Add(e.Item1);
                     t0.Remove(e);
-                    i = 0;
                 }
                 else if (vs_in_t2.Contains(e.Item1))
                 {
                     vs_in_t2.Add(e.Item2);
                     t0.Remove(e);
-                    i = 0;
                 }
                 else if (vs_in_t2.Contains(e.Item2))
                 {
                     vs_in_t2.Add(e.Item1);
                     t0.Remove(e);
-                    i = 0;
                 }
-                else
-                    i++;
-
+                i++;
+                if (i >= t0.Count)
+                    i = 0;
             }
 
             foreach (var x in vs_in_t1)
@@ -364,8 +360,16 @@ namespace DCMSC_Exact
 
         static void Main(string[] args)
         {
+            Console.WriteLine("Digite o nome do arquivo: ");
+            string arquivo = Console.ReadLine();
+            if (arquivo.Contains("40"))
+                Console.WriteLine("Digite o grau máximo [3, 5 ou 10]: ");
+            else
+                Console.WriteLine("Digite o grau máximo [5, 10, 20]: ");
+            int grau = int.Parse(Console.ReadLine());
+
             DateTime start = DateTime.Now;
-            Program p = new Program(args[0], 8);
+            Program p = new Program(arquivo, grau);
 
             p.BranchAndBound();
 
