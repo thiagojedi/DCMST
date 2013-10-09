@@ -99,7 +99,7 @@ namespace DCMSC_Exact
             foreach (var edge in l)
                 cost += (int)matrix[edge.Item1][edge.Item2];
 
-            Debug.Print("Custo da árvore = {0}", cost);
+            //Debug.Print("Custo da árvore = {0}", cost);
             return cost;
         }
 

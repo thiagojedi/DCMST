@@ -56,28 +56,22 @@ namespace DCMSC_Exact
             Dictionary<int, int> vertexes_with_degrees = new Dictionary<int, int>();
             List<Tuple<int, int>> edges = new List<Tuple<int, int>>();
 
-            vertexes_with_degrees.Add(s, 1);
+            vertexes_with_degrees.Add(s, 0);
 
-            while (vertexes_with_degrees.Count < ordem)
+            while (vertexes_with_degrees.Count < this.ordem)
             {
                 int min = int.MaxValue;
                 int start_node = 0;
                 int final_node = 0;
 
-                foreach (var item in vertexes_with_degrees)
-                {
-                    int vertex = item.Key;
-
-                    for (int i = 0; i < ordem; i++)
-                    {
-                        if (!vertexes_with_degrees.ContainsKey(i) && this.initial_matrix[vertex][i] < min && vertexes_with_degrees[vertex] < this.degree)
+                foreach (var vertex in vertexes_with_degrees.OrderBy(x => x.Key))
+                    for (int i = 0; i < this.ordem; i++)
+                        if (!vertexes_with_degrees.ContainsKey(i) && this.initial_matrix[vertex.Key][i] < min && vertex.Value < this.degree)
                         {
-                            min = (int)this.initial_matrix[vertex][i];
-                            start_node = vertex;
+                            min = (int)this.initial_matrix[vertex.Key][i];
+                            start_node = vertex.Key;
                             final_node = i;
                         }
-                    }
-                }
                 vertexes_with_degrees[start_node] += 1;
                 vertexes_with_degrees.Add(final_node, 1);
                 Helpers.AddEdge(start_node, final_node, ref edges);
@@ -99,6 +93,7 @@ namespace DCMSC_Exact
                 int start_node = 0;
                 int final_node = 0;
 
+                vertexes.Sort();
                 foreach (var vertex in vertexes)
                     for (int i = 0; i < this.ordem; i++)
                         if (!vertexes.Contains(i) && this.initial_matrix[vertex][i] < min)
@@ -135,19 +130,21 @@ namespace DCMSC_Exact
                     x.Add(edge);
 
                 if (!vertex_with_degrees.ContainsKey(edge.Item1))
-                    vertex_with_degrees.Add(edge.Item1, 0);
-                vertex_with_degrees[edge.Item1] += 1;
+                    vertex_with_degrees.Add(edge.Item1, 1);
+                else
+                    vertex_with_degrees[edge.Item1] += 1;
 
                 if (!vertex_with_degrees.ContainsKey(edge.Item2))
-                    vertex_with_degrees.Add(edge.Item2, 0);
-                vertex_with_degrees[edge.Item2] += 1;
+                    vertex_with_degrees.Add(edge.Item2, 1);
+                else
+                    vertex_with_degrees[edge.Item2] += 1;
 
-                if (vertex_with_degrees[edge.Item1] == this.degree)
+                if (vertex_with_degrees[edge.Item1] >= this.degree)
                 {
                     node_to_y = edge.Item1;
                     break;
                 }
-                if (vertex_with_degrees[edge.Item2] == this.degree)
+                if (vertex_with_degrees[edge.Item2] >= this.degree)
                 {
                     node_to_y = edge.Item2;
                     break;
@@ -167,15 +164,19 @@ namespace DCMSC_Exact
 
         void BranchAndBound()
         {
-            //int start = new Random().Next(ordem);
-            int start = ordem-1;
+            int start = 0;
+            int solution_index = 0;
+
+            Random r = new Random();
 
             //Step 1
+            //start = r.Next(ordem);
             upper_bound = Helpers.Cost(this.PrimDegreeConstrained(start), this.initial_matrix);
             Console.WriteLine("Upper bound inicial: {0}", upper_bound);
             index = 0;
 
             //Step 2
+            //start = r.Next(ordem);
             List<Tuple<int, int>> not_in_xy = Prim(start);
             right_bound.Insert(index, Helpers.Cost(not_in_xy, this.initial_matrix));
             left_bound.Insert(index, int.MaxValue);
@@ -197,10 +198,15 @@ namespace DCMSC_Exact
             Helpers.PrintEdges("Y: ", y);
 
             var complete = CompleteMST(x, y);
-            spanning_trees.Add(complete);
 
             right_bound.Insert(index, Helpers.Cost(complete, this.initial_matrix));
-            left_bound.Insert(index, right_bound[index - 1] + PenaltyOfEdge(x.Last(), spanning_trees[index - 1]));
+
+            var new_x = new List<Tuple<int, int>>(x);
+            new_x.Remove(x.Last());
+
+            GenerateXY(ref new_x, ref old_y, complete);
+            int lb = Helpers.Cost(CompleteMST(new_x, old_y), this.initial_matrix);
+            left_bound.Insert(index, lb);
 
             Debug.Print("Right Bound {1}: {0}", right_bound[index], index);
             Debug.Print("Left Bound {1}: {0}", left_bound[index], index);
@@ -209,7 +215,10 @@ namespace DCMSC_Exact
             if (right_bound[index] < upper_bound)
                 //Step 5
                 if (Helpers.Possivel(complete, degree))
+                {
                     upper_bound = right_bound[index];
+                    solution_index = index;
+                }
                 else
                 {
                     index += 1;
@@ -229,9 +238,9 @@ namespace DCMSC_Exact
                 {
                     List<Tuple<int, int>> outro_nxy = new List<Tuple<int, int>>(not_in_xy);
                     outro_nxy.Remove(ult_x);
-
                     GenerateXY(ref x, ref old_y, outro_nxy);
-                    left_bound[index] = Helpers.Cost(CompleteMST(x, y), this.initial_matrix);
+                    complete = CompleteMST(x, y);
+                    left_bound[index] = Helpers.Cost(complete, this.initial_matrix);
                 }
                 else
                     left_bound[index] = int.MaxValue;
@@ -241,13 +250,13 @@ namespace DCMSC_Exact
             {
                 //Step 8
                 index -= 1;
-                if (index > -1)
+                if (index > 0)
                     goto Step6;
 
             }
 
-            Helpers.PrintEdges("Solução", spanning_trees.Last(), true);
-            Console.WriteLine("Custo da Solução: {0}", Helpers.Cost(spanning_trees.Last(), this.initial_matrix));
+            Console.WriteLine("Custo da Solução: {0}", Helpers.Cost(complete, this.initial_matrix));
+            Helpers.PrintEdges("Solução", complete, true);
         }
 
         /// <summary>
@@ -327,16 +336,52 @@ namespace DCMSC_Exact
         /// <returns>A penalidade da aresta</returns>
         int PenaltyOfEdge(Tuple<int, int> edge, List<Tuple<int, int>> tree)
         {
-            int min = Helpers.Cost(tree, this.initial_matrix);
 
-            List<Tuple<int, int>> t1 = new List<Tuple<int, int>>();
-            List<Tuple<int, int>> t2 = new List<Tuple<int, int>>(tree);
-            t1.Add(edge);
-            t2.Remove(edge);
-            int max = Helpers.Cost(CompleteMST(t2, t1), this.initial_matrix);
-            
-            int penality = Math.Abs(max - min);
-            Debug.Print("Penalidade de Tuple {0}-{1} = {2}", edge.Item1 + 1, edge.Item2 + 1, penality);
+            int min = int.MaxValue;
+            int min_i = 0;
+            int min_j = 0;
+
+            List<Tuple<int, int>> t0 = new List<Tuple<int, int>>(tree);
+
+            t0.Remove(edge);
+
+            List<int> vs_in_t1 = new List<int>();
+            List<int> vs_in_t2 = new List<int>();
+
+            vs_in_t1.Add(edge.Item1);
+            vs_in_t2.Add(edge.Item2);
+
+            while (t0.Count > 0)
+            {
+                var e = t0.First();
+                if (vs_in_t1.Contains(e.Item1) && !vs_in_t1.Contains(e.Item2))
+                    vs_in_t1.Add(e.Item2);
+                else if (vs_in_t1.Contains(e.Item2) && !vs_in_t1.Contains(e.Item1))
+                    vs_in_t1.Add(e.Item1);
+                else if (vs_in_t2.Contains(e.Item1) && !vs_in_t2.Contains(e.Item2))
+                    vs_in_t2.Add(e.Item2);
+                else if (vs_in_t2.Contains(e.Item2) && !vs_in_t2.Contains(e.Item1))
+                    vs_in_t2.Add(e.Item1);
+
+                t0.Remove(e);
+            }
+
+            foreach (var x in vs_in_t1)
+            {
+                foreach (var y in vs_in_t2)
+                {
+                    bool existe = Helpers.CoveredEdge(tree, x, y);
+                    if (!existe && min > (int)initial_matrix[x][y])
+                    {
+                        min = (int)initial_matrix[x][y];
+                        min_i = x;
+                        min_j = y;
+                    }
+                }
+            }
+
+            int penality = Math.Abs((int)initial_matrix[edge.Item1][edge.Item2] - min);
+            Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", edge.Item1 + 1, edge.Item2 + 1, (int)initial_matrix[edge.Item1][edge.Item2], min_i + 1, min_j + 1, min, penality);
             return penality;
         }
 
@@ -358,17 +403,14 @@ namespace DCMSC_Exact
             if (!arquivo.Contains(".txt"))
                 arquivo = arquivo + ".txt";
 
-            //for (int i = 0; i < 5; i++)
-            //{
-                DateTime start = DateTime.Now;
-                Program p = new Program(arquivo, grau);
+            DateTime start = DateTime.Now;
+            Program p = new Program(arquivo, grau);
 
-                p.BranchAndBound();
+            p.BranchAndBound();
 
-                Console.WriteLine("Calculado em {0}s", (DateTime.Now - start).TotalSeconds);
+            Console.WriteLine("Calculado em {0}s", (DateTime.Now - start).TotalSeconds);
 
-                Console.WriteLine();
-            //}
+            Console.WriteLine();
 
             Console.Read();
         }
