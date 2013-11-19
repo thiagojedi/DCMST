@@ -159,7 +159,7 @@ namespace DCMSC_Exact
                 l.Add(Tuple.Create(j, i));
         }
 
-        public static bool Possivel(List<Tuple<int, int>> l, int d)
+        public static bool Possivel(List<Tuple<int, int>> l, int d, int o)
         {
             Dictionary<int, int> v = new Dictionary<int, int>();
             foreach (var e in l)
@@ -173,6 +173,11 @@ namespace DCMSC_Exact
                 else
                     v[e.Item2] += 1;
                 if (v[e.Item1] > d || v[e.Item2] > d)
+                    return false;
+            }
+            for (int i = 0; i < o; i++)
+            {
+                if (!v.ContainsKey(i))
                     return false;
             }
             return true;
