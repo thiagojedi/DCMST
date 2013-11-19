@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace DCMSC_Exact
@@ -15,11 +16,9 @@ namespace DCMSC_Exact
         /// </summary>
         /// <param name="o">Ordem da matriz quadrada</param>
         /// <returns>Uma nova matriz quadrada</returns>
-        public static int?[][] InicializaMatrix(int o)
+        public static int?[,] InicializaMatrix(int o)
         {
-            int?[][] matrix = new int?[o][];
-            for (int i = 0; i < o; i++)
-                matrix[i] = new int?[o];
+            int?[,] matrix = new int?[o, o];
             return matrix;
         }
 
@@ -28,21 +27,35 @@ namespace DCMSC_Exact
         /// </summary>
         /// <param name="m">Matriz a simétrica a ser imprimida</param>
         /// <param name="to_console">Flag para mandar ou nao pro console</param>
-        public static void PrintMatrix(int?[][] m, bool to_console = true)
+        public static void PrintMatrix(int?[,] m, bool to_console = true)
         {
             StringBuilder sb_message = new StringBuilder();
-            foreach (var i in m)
+
+            for (int i = 0; i < m.GetLength(0); i++)
             {
-                foreach (var j in i)
+                for (int j = 0; j < m.GetLength(1); j++)
                 {
-                    if (null != j)
-                        sb_message.AppendFormat("{0,4}", j);
+                    if (null != m[i, j])
+                        sb_message.AppendFormat("{0,4}", m[i, j]);
                     else
                         sb_message.Append("   -");
                     sb_message.Append(" ");
                 }
                 sb_message.AppendLine();
             }
+
+            //foreach (var i in m)
+            //{
+            //    foreach (var j in i)
+            //    {
+            //        if (null != j)
+            //            sb_message.AppendFormat("{0,4}", j);
+            //        else
+            //            sb_message.Append("   -");
+            //        sb_message.Append(" ");
+            //    }
+            //    sb_message.AppendLine();
+            //}
             if (to_console)
                 Console.WriteLine(sb_message);
             else
@@ -93,11 +106,11 @@ namespace DCMSC_Exact
         /// <param name="l">Lista de arestas</param>
         /// <param name="matrix">Representação matricial do grafo</param>
         /// <returns></returns>
-        public static int Cost(List<Tuple<int, int>> l, int?[][] matrix)
+        public static int Cost(List<Tuple<int, int>> l, int?[,] matrix)
         {
             int cost = 0;
             foreach (var edge in l)
-                cost += (int)matrix[edge.Item1][edge.Item2];
+                cost += (int)matrix[edge.Item1, edge.Item2];
 
             //Debug.Print("Custo da árvore = {0}", cost);
             return cost;
@@ -109,23 +122,31 @@ namespace DCMSC_Exact
         /// <param name="filepath">Endereço do arquivo de teste. Pode ser relativo ou absoluto.</param>
         /// <param name="ordem">Parâmetro de saída para a ordem da matriz</param>
         /// <returns>Matriz quadrada preenchida de acordo com o arquivo de teste.</returns>
-        public static int?[][] CriaMatrix(string filepath, ref int ordem)
+        public static int?[,] CriaMatrix(string filepath, ref int ordem)
         {
             using (StreamReader testcase = new StreamReader(filepath))
             {
-                string linha = testcase.ReadLine();
-                ordem = int.Parse(linha);
+                string linha;
+                string pattern = @"^(?<in>\d+)\s+(?<out>\d+)\s+(?<weight>\d+)";
+                Regex rx_line = new Regex(pattern);
+
                 Debug.Print("Criando array");
-                int?[][] matrix = Helpers.InicializaMatrix(ordem);
-                for (int i = 0; i < ordem; i++)
+
+                int?[,] matrix = Helpers.InicializaMatrix(ordem);
+
+                while (!testcase.EndOfStream)
                 {
-                    string[] row = testcase.ReadLine().Split(' ');
-                    for (int j = 0; j < i; j++)
-                    {
-                        matrix[i][j] = int.Parse(row[j]);
-                        matrix[j][i] = matrix[i][j];
-                    }
+                    linha = testcase.ReadLine();
+                    Match match = Regex.Match(linha, pattern);
+
+                    int a = int.Parse(match.Groups["in"].Value);
+                    int b = int.Parse(match.Groups["out"].Value);
+                    int w = int.Parse(match.Groups["weight"].Value);
+
+                    matrix[a, b] = w;
+                    matrix[b, a] = w;
                 }
+
                 return matrix;
             }
         }
@@ -140,7 +161,6 @@ namespace DCMSC_Exact
 
         public static bool Possivel(List<Tuple<int, int>> l, int d)
         {
-            bool possivel = true;
             Dictionary<int, int> v = new Dictionary<int, int>();
             foreach (var e in l)
             {
@@ -153,9 +173,9 @@ namespace DCMSC_Exact
                 else
                     v[e.Item2] += 1;
                 if (v[e.Item1] > d || v[e.Item2] > d)
-                    possivel = false;
+                    return false;
             }
-            return possivel;
+            return true;
         }
     }
 }

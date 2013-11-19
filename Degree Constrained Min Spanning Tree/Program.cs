@@ -5,6 +5,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
+
 
 namespace DCMSC_Exact
 {
@@ -14,7 +16,7 @@ namespace DCMSC_Exact
         int ordem;
         int degree;
 
-        int?[][] initial_matrix;
+        int?[,] initial_matrix;
 
         int upper_bound;
 
@@ -27,10 +29,12 @@ namespace DCMSC_Exact
         /// Construtor padrão. Armazena a matriz do arquivo passado.
         /// </summary>
         /// <param name="s">Caminho do arquivo de entrada</param>
-        public Program(string s, int _degree)
+        /// <param name="_degree">Grau máximo</param>
+        /// <param name="_ordem">Tamanho do grafo</param>
+        public Program(string s, int _degree, int _ordem)
         {
             #region Inicialização de Parametros Globais
-            this.ordem = 0;
+            this.ordem = _ordem;
             this.index = 0;
             this.degree = _degree;
             this.right_bound = new List<int>();
@@ -66,9 +70,9 @@ namespace DCMSC_Exact
 
                 foreach (var vertex in vertexes_with_degrees.OrderBy(x => x.Key))
                     for (int i = 0; i < this.ordem; i++)
-                        if (!vertexes_with_degrees.ContainsKey(i) && this.initial_matrix[vertex.Key][i] < min && vertex.Value < this.degree)
+                        if (!vertexes_with_degrees.ContainsKey(i) && this.initial_matrix[vertex.Key,i] < min && vertex.Value < this.degree)
                         {
-                            min = (int)this.initial_matrix[vertex.Key][i];
+                            min = (int)this.initial_matrix[vertex.Key,i];
                             start_node = vertex.Key;
                             final_node = i;
                         }
@@ -96,9 +100,9 @@ namespace DCMSC_Exact
                 vertexes.Sort();
                 foreach (var vertex in vertexes)
                     for (int i = 0; i < this.ordem; i++)
-                        if (!vertexes.Contains(i) && this.initial_matrix[vertex][i] < min)
+                        if (!vertexes.Contains(i) && this.initial_matrix[vertex,i] < min)
                         {
-                            min = (int)this.initial_matrix[vertex][i];
+                            min = (int)this.initial_matrix[vertex,i];
                             start_node = vertex;
                             final_node = i;
                         }
@@ -180,7 +184,7 @@ namespace DCMSC_Exact
             index = 0;
 
             //Step 2
-            start = r.Next(ordem);
+            //start = r.Next(ordem);
             List<Tuple<int, int>> not_in_xy = Prim(start);
             right_bound.Insert(index, Helpers.Cost(not_in_xy, this.initial_matrix));
             left_bound.Insert(index, int.MaxValue);
@@ -262,7 +266,8 @@ namespace DCMSC_Exact
             }
 
             Console.WriteLine("Custo da Solução: {0}", Helpers.Cost(complete, this.initial_matrix));
-            //Helpers.PrintEdges("Solução", complete, true);
+            Console.WriteLine("Possível? {0}", Helpers.Possivel(complete, 3) ? "Sim" : "Não");
+            Helpers.PrintEdges("Solução", complete, false);
         }
 
         /// <summary>
@@ -296,9 +301,9 @@ namespace DCMSC_Exact
                 vertexes.Sort();
                 foreach (var vertex in vertexes)
                     for (int i = 0; i < ordem; i++)
-                        if (this.initial_matrix[vertex][i] < min && !Helpers.CoveredEdge(exclude, vertex, i) && !vertexes.Contains(i))
+                        if (this.initial_matrix[vertex,i] < min && !Helpers.CoveredEdge(exclude, vertex, i) && !vertexes.Contains(i))
                         {
-                            min = (int)this.initial_matrix[vertex][i];
+                            min = (int)this.initial_matrix[vertex,i];
                             start_node = vertex;
                             final_node = i;
                         }
@@ -377,43 +382,55 @@ namespace DCMSC_Exact
                 foreach (var y in vs_in_t2)
                 {
                     bool existe = Helpers.CoveredEdge(tree, x, y);
-                    if (!existe && min > (int)initial_matrix[x][y])
+                    if (!existe && min > (int)initial_matrix[x,y])
                     {
-                        min = (int)initial_matrix[x][y];
+                        min = (int)initial_matrix[x,y];
                         min_i = x;
                         min_j = y;
                     }
                 }
             }
 
-            int penality = (int)initial_matrix[edge.Item1][edge.Item2] - min;
-            Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", edge.Item1 + 1, edge.Item2 + 1, (int)initial_matrix[edge.Item1][edge.Item2], min_i + 1, min_j + 1, min, penality);
+            int penality = (int)initial_matrix[edge.Item1,edge.Item2] - min;
+            //Debug.Print("Tuple {0}-{1}({2}) - Min {3}-{4}({5}) = {6}", edge.Item1 + 1, edge.Item2 + 1, (int)initial_matrix[edge.Item1,edge.Item2], min_i + 1, min_j + 1, min, penality);
             return penality;
         }
 
 
-
+        [STAThread]
         static void Main(string[] args)
         {
-            Console.WriteLine("Árvore Geradora Mínima de Grau Restrito");
+            Console.WriteLine("Árvore Geradora Mínima de Grau Restrito ");
             Console.WriteLine("---------------------------------------");
 
-            Console.WriteLine("Digite o nome do arquivo (tcXX-y | sendo XX = 40 ou 80, e y = [1..5]): ");
-            string arquivo = Console.ReadLine();
-            if (arquivo.Contains("40"))
-                Console.WriteLine("Digite o grau máximo [3, 5 ou 10]: ");
+            Console.WriteLine("1- Abrir arquivo                2- Sair ");
+
+            int option = int.Parse(Console.ReadLine());
+
+            if (2 == option)
+                return;
+
+            string arquivo;
+
+            OpenFileDialog open_file = new OpenFileDialog();
+            DialogResult result = open_file.ShowDialog();
+
+            if (result == DialogResult.OK)
+                arquivo = open_file.FileName;
             else
-                Console.WriteLine("Digite o grau máximo [5, 10, 20]: ");
+                return;
+
+            Console.WriteLine("Digite quantos nós há no grafo do arquivo selecionado:");
+            int ordem = int.Parse(Console.ReadLine());
+
+            Console.WriteLine("Digite qual o grau máximo escolhido:");
             int grau = int.Parse(Console.ReadLine());
 
-            if (!arquivo.Contains(".txt"))
-                arquivo = arquivo + ".txt";
+            
+            Program p = new Program(arquivo, grau, ordem);
 
             DateTime start = DateTime.Now;
-            Program p = new Program(arquivo, grau);
-
             p.BranchAndBound();
-
             Console.WriteLine("Calculado em {0}s", (DateTime.Now - start).TotalSeconds);
 
             Console.WriteLine();
