@@ -385,6 +385,7 @@ namespace DCMSC_Exact
 
             while (t0.Count > 0)
             {
+                //TODO Review this for it's crashing in some instances
                 var e = t0.Find(x => (vs_in_t1.Contains(x.Item1) || vs_in_t1.Contains(x.Item2) || vs_in_t2.Contains(x.Item1) || vs_in_t2.Contains(x.Item2)));
                 if (vs_in_t1.Contains(e.Item1))
                     vs_in_t1.Add(e.Item2);
