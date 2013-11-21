@@ -5,14 +5,14 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
-namespace Ant_Colony
+namespace Ants
 {
     class Program
     {
         [STAThread]
         static void Main(string[] args)
         {
-            Console.WriteLine("AGM Grau Restrito - Colonia de Formigas ");
+            Console.WriteLine("AGM Grau Restrito - Ataque das Formigas ");
             Console.WriteLine("---------------------------------------");
 
             Console.WriteLine("1- Abrir arquivo                2- Sair ");

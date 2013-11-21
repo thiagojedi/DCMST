@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Exact Algoritm", "Degree Constrained Min Spanning Tree\Exact Algoritm.csproj", "{4EDD5CBC-39A7-453F-A761-850FCD1F0D21}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ant Colony", "Ant Colony\Ant Colony.csproj", "{B0641F65-2819-481A-869B-8CB66EDB8AAD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ants", "Ant Colony\Ants.csproj", "{B0641F65-2819-481A-869B-8CB66EDB8AAD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

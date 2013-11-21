@@ -7,7 +7,7 @@
     <ProjectGuid>{B0641F65-2819-481A-869B-8CB66EDB8AAD}</ProjectGuid>
     <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Ant_Colony</RootNamespace>
+    <RootNamespace>Ants</RootNamespace>
     <AssemblyName>Ant Colony</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
