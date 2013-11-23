@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -9,18 +10,19 @@ namespace Ants
 {
     class Program
     {
-        private int[,] WeightMatrix;
-        private double[,] PheromoneMatrix;
+        private int GraphSize;
+        private int?[,] WeightMatrix;
+        private double?[,] PheromoneMatrix;
 
         // Algorithm Parameters
-        private int MaxWeith;
-        private int MinWeith;
-
         private double EvapFactor;
 
+        // Parametros Auxiliares
+        private int MaxWeight;
+        private int MinWeight;
 
-        private double MaxPhero { get { return 1000 * ((MaxWeith - MinWeith) + (MaxWeith - MinWeith) / 3); } }
-        private double MinPhero { get { return (MaxWeith - MinWeith) / 3; } }
+        private double MaxPhero;
+        private double MinPhero;
 
 
 
@@ -31,19 +33,70 @@ namespace Ants
         /// <param name="graph_size">Número de Vértices no Grafo</param>
         public Program(string file, int graph_size)
         {
-            #region Inicialização de Variáveis
-            this.WeightMatrix = new int[graph_size, graph_size];
-            #endregion
+            this.GraphSize = graph_size;
+            this.WeightMatrix = new int?[graph_size, graph_size];
+            this.PheromoneMatrix = new double?[graph_size, graph_size];
+            this.MaxWeight = int.MinValue;
+            this.MinWeight = int.MaxValue;
+
+            InitializeWeights(file);
+            InitializePheromones();
+
+            this.MaxPhero = 1000 * ((MaxWeight - MinWeight) + (MaxWeight - MinWeight) / 3);
+            this.MinPhero = (MaxWeight - MinWeight) / 3;
+        }
+
+        private void InitializeWeights(string filepath)
+        {
+            // Lê arquivo
+            using (System.IO.StreamReader file = new System.IO.StreamReader(filepath))
+            {
+                string linha;
+                string pattern = @"^(?<in>\d+)\s+(?<out>\d+)\s+(?<weight>\d+)";
+                Regex rx_line = new Regex(pattern);
+
+                while (!file.EndOfStream)
+                {
+                    linha = file.ReadLine();
+                    Match match = Regex.Match(linha, pattern);
+
+                    int a = int.Parse(match.Groups["in"].Value);
+                    int b = int.Parse(match.Groups["out"].Value);
+                    int w = int.Parse(match.Groups["weight"].Value);
+
+                    // Salva pesos
+                    this.WeightMatrix[a, b] = w;
+                    this.WeightMatrix[b, a] = w;
+
+                    // Atualiza Limites
+                    if (MaxWeight < w)
+                        MaxWeight = w;
+
+                    if (MinWeight > w)
+                        MinWeight = w;
+                }
+            }
+        }
+
+        private void InitializePheromones()
+        {
+            for (int i = 0; i < GraphSize; i++)
+                for (int j = i + 1; j < GraphSize; j++)
+                {
+                    PheromoneMatrix[i, j] = InitialPher(i, j);
+                    PheromoneMatrix[j, i] = InitialPher(i, j);
+                }
         }
 
         /// <summary>
         /// Calcula a quantidade inicial de Feromônio numa aresta
         /// </summary>
-        /// <param name="edge">Aresta percorrida</param>
+        /// <param name="i">Vertice inicial</param>
+        /// <param name="j">Vertice final</param>
         /// <returns>Quantidade de Feromônio</returns>
-        double InitialPher(Tuple<int,int> edge)
+        double InitialPher(int i, int j)
         {
-            int a = edge.Item1, b = edge.Item2;
+            int a = i, b = j;
             if (a > b)
             {
                 // XOR Swap
@@ -51,7 +104,7 @@ namespace Ants
                 b = a ^ b;
                 a = a ^ b;
             }
-            return (MaxWeith - WeightMatrix[a, b]) + (MaxWeith - MinWeith) / 3;
+            return (MaxWeight - (int)WeightMatrix[a, b]) + (MaxWeight - MinWeight) / 3;
         }
 
         [STAThread]
