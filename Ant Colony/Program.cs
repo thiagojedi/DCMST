@@ -10,21 +10,47 @@ namespace Ants
 {
     class Program
     {
-        private int GraphSize;
-        private int?[,] WeightMatrix;
-        private double?[,] PheromoneMatrix;
+
 
         // Algorithm Parameters
-        private double EvapFactor;
+        struct Parameters
+        {
+            // Número máximo de iterações do algoritmo
+            public const int MaxCycles = 10000;
+            // Número de iterações sem melhoras antes de reduzir os feromonios da melhor solução
+            public const int EscapeCycle = 100;
+            // Número de iterações sem melhoras antes de sair o algoritmo
+            public const int StopCycle = 2500;
+            // Quantos nós uma formiga vizita por ciclo
+            public const int AntSteps = 75;
+
+            // Fator de evaporação de feromonio
+            public static double EvapFactor = 0.5;
+            // Fator de atualização da evaporação
+            public const double EvapUpdate = 0.95;
+
+            // Fator de acrécimo de ferormonio na melhor solução
+            public static double EnchanceFactor = 1.5;
+            // Fator de atualização do acrécimo
+            public const double EnchanceUpdate = 1.05;
+
+            // A cada quantos ciclos deve-se atualizar os fatores
+            public const int UpdateCycle = 500;
+        }
 
         // Parametros Auxiliares
-        private int MaxWeight;
-        private int MinWeight;
+        int MaxWeight;
+        int MinWeight;
 
-        private double MaxPhero;
-        private double MinPhero;
+        double MaxPhero;
+        double MinPhero;
 
+        int GraphSize;
+        int?[,] WeightMatrix;
+        double?[,] PheromoneMatrix;
 
+        Ant[] ants;
+        
 
         /// <summary>
         /// Construtor padrão
@@ -36,6 +62,7 @@ namespace Ants
             this.GraphSize = graph_size;
             this.WeightMatrix = new int?[graph_size, graph_size];
             this.PheromoneMatrix = new double?[graph_size, graph_size];
+            this.ants = new Ant[graph_size];
             this.MaxWeight = int.MinValue;
             this.MinWeight = int.MaxValue;
 
@@ -145,5 +172,12 @@ namespace Ants
             Console.Read();
 
         }
+    }
+
+    protected struct Ant
+    {
+        public int VerticeAtual { get; set; }
+        public List<Tuple<int,int>> ArestasPercorridas { get; set; }
+        public List<int> VerticesVisitados { get; set; }
     }
 }
