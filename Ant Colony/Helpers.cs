@@ -18,30 +18,36 @@ namespace Ants
         public static Tuple<int, int> SelectEdge(int i, double?[,] phero)
         {
             //TODO Rever essa roleta
-            double?[] prob = new double?[phero.GetLength(0)];
+            double[] prob = new double[phero.GetLength(0)];
 
             double total = 0.0;
             for (int x = 0; x < phero.GetLength(0); x++)
             {
-                prob[x] = phero[i, x];
-                total += phero[i, x] == null ? 0 : (double)phero[i, x];
+                prob[x] = phero[i, x] == null ? 0 : (double)phero[i, x];
+                total += prob[x];
             }
+
+            for (int x = 0; x < prob.Length; x++)
+                if (i != x)
+                    prob[x] = (prob[x] / total);
 
             int last = 0;
             for (int x = 1; x < prob.Length; x++)
                 if (i != x)
                 {
-                    double y = prob[last] == null ? 0 : (double)prob[last];
-                    prob[x] = y + (prob[x] / total);
+                    if (prob[last] != 0)
+                        prob[x] += prob[last];
                     last = x;
                 }
-
             double roleta = new Random().NextDouble() * (double)prob[last];
 
             int j = 0;
             for (int x = 0; x < prob.Length; x++)
-                if (prob[x] != null && roleta > (double)prob[x])
-                    j = prob[x + 1] != null ? x + 1 : x + 2;
+                if (prob[x] != 0 && roleta <= (double)prob[x])
+                {
+                    j = x;
+                    break;
+                }
 
             return new Tuple<int, int>(i, j);
         }
