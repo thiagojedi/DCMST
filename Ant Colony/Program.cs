@@ -45,14 +45,15 @@ namespace Ants
         double MaxPhero;
         double MinPhero;
 
+        int MaxDegree;
         int GraphSize;
         int?[,] WeightMatrix;
         double?[,] PheromoneMatrix;
         int[,] UpdateMatrix;
 
-        List<Tuple<int, int>> MelhorSolução;
+        List<Tuple<int, int>> MelhorSolucao;
         int MelhorCusto;
-        
+
         Ant[] AntFarm;
 
 
@@ -61,11 +62,12 @@ namespace Ants
         /// </summary>
         /// <param name="file">Nome do Arquivo de Testes</param>
         /// <param name="graph_size">Número de Vértices no Grafo</param>
-        public Program(string file, int graph_size)
+        public Program(string file, int graph_size, int degree)
         {
             this.MaxWeight = int.MinValue;
             this.MinWeight = int.MaxValue;
             this.GraphSize = graph_size;
+            this.MaxDegree = degree;
             this.WeightMatrix = new int?[graph_size, graph_size];
             this.PheromoneMatrix = new double?[graph_size, graph_size];
             this.UpdateMatrix = Helpers.MatrizZero(graph_size);
@@ -81,7 +83,7 @@ namespace Ants
             this.MinPhero = (MaxWeight - MinWeight) / 3;
         }
 
-        private void InitializeWeights(string filepath)
+        void InitializeWeights(string filepath)
         {
             // Lê arquivo
             using (System.IO.StreamReader file = new System.IO.StreamReader(filepath))
@@ -113,13 +115,13 @@ namespace Ants
             }
         }
 
-        private void InitializePheromones()
+        void InitializePheromones()
         {
             for (int i = 0; i < GraphSize; i++)
                 for (int j = i + 1; j < GraphSize; j++)
                 {
-                    PheromoneMatrix[i, j] = InitialPher(i, j);
-                    PheromoneMatrix[j, i] = InitialPher(i, j);
+                    PheromoneMatrix[i, j] = InitialPhero(i, j);
+                    PheromoneMatrix[j, i] = InitialPhero(i, j);
                 }
         }
 
@@ -129,7 +131,7 @@ namespace Ants
         /// <param name="i">Vertice inicial</param>
         /// <param name="j">Vertice final</param>
         /// <returns>Quantidade de Feromônio</returns>
-        double InitialPher(int i, int j)
+        double InitialPhero(int i, int j)
         {
             int a = i, b = j;
             if (a > b)
@@ -142,29 +144,64 @@ namespace Ants
             return (MaxWeight - (int)WeightMatrix[a, b]) + (MaxWeight - MinWeight) / 3;
         }
 
-        public void ReleaseTheAnts()
+        public void AntBasedAlgorithm()
         {
-            // Coloca uma formiga em cada vertice
-            for (int i = 0; i < GraphSize; i++)
-                AntFarm[i].VerticeAtual = i;
-
-            bool parada = false;
-            while (!parada)
+            
+            int NoImprov = 0;
+            int Cycles = 0;
+            bool StopCondition = false;
+            while (!StopCondition)
             {
+                Cycles++;
+
+                // Coloca uma formiga em cada vertice
+                for (int i = 0; i < GraphSize; i++)
+                    AntFarm[i] = new Ant(i);
+
+
                 // Fase de Exploração
-                for (int s = 0; s < Parameters.AntSteps; s++)
+                ReleaseTheAnts();
+
+                UpdatePheros();
+
+                // Fase de Construção da Árvore
+                var Tree = BuildTree();
+
+                int NewCost = Helpers.Cost(Tree, WeightMatrix);
+                if (NewCost < this.MelhorCusto)
                 {
-                    if (s == Parameters.AntSteps / 3 || s == 2 * Parameters.AntSteps / 3)
-                        UpdatePheros();
-                    foreach (var ant in AntFarm)
-                    {
-                        MoveAnt(ant);
-                    }
+                    MelhorSolucao = Tree;
+                    MelhorCusto = NewCost;
+                    NoImprov = 0;
                 }
+                else
+                    NoImprov += 1;
+
+                EnchanceBest();
+
+                // Verificações
+                if (NoImprov == Parameters.EscapeCycle)
+                    NerfBest();
+
+                if (Cycles == Parameters.UpdateCycle)
+                    UpdateParameters();
+
+                StopCondition = NoImprov == Parameters.StopCycle || Cycles == Parameters.MaxCycles;
             }
         }
 
-        private void MoveAnt(Ant a)
+        void ReleaseTheAnts()
+        {
+            for (int s = 0; s < Parameters.AntSteps; s++)
+            {
+                if (s == Parameters.AntSteps / 3 || s == 2 * Parameters.AntSteps / 3)
+                    UpdatePheros();
+                foreach (var ant in AntFarm)
+                    MoveAnt(ant);
+            }
+        }
+
+        void MoveAnt(Ant a)
         {
             Random r = new Random();
             int tentativas = 0;
@@ -182,24 +219,85 @@ namespace Ants
             }
         }
 
-        private void MarkForUpdate(Tuple<int, int> edge)
+        void MarkForUpdate(Tuple<int, int> edge)
         {
-                UpdateMatrix[edge.Item1, edge.Item2] += 1;
-                UpdateMatrix[edge.Item2, edge.Item1] += 1;
+            UpdateMatrix[edge.Item1, edge.Item2] += 1;
+            UpdateMatrix[edge.Item2, edge.Item1] += 1;
         }
 
-        private void UpdatePheros()
+        void UpdatePheros()
         {
             for (int i = 0; i < GraphSize; i++)
-                for (int j = i+1; j < GraphSize; j++)
+                for (int j = i + 1; j < GraphSize; j++)
                 {
-                    double updatedPhero = (1 - Parameters.EvapFactor) * (double)PheromoneMatrix[i, j] + UpdateMatrix[i, j] * InitialPher(i, j);
+                    double updatedPhero = (1 - Parameters.EvapFactor) * (double)PheromoneMatrix[i, j] + UpdateMatrix[i, j] * InitialPhero(i, j);
                     if (updatedPhero > MaxPhero)
-                        updatedPhero = MaxPhero - InitialPher(i,j);
+                        updatedPhero = MaxPhero - InitialPhero(i, j);
                     if (updatedPhero < MinPhero)
-                        updatedPhero = MinPhero + InitialPher(i, j);
+                        updatedPhero = MinPhero + InitialPhero(i, j);
                     PheromoneMatrix[i, j] = updatedPhero;
                 }
+        }
+
+        List<Tuple<int, int>> AllEdgesByPhero()
+        {
+            List<Tuple<int, int>> covered = new List<Tuple<int, int>>();
+
+            for (int i = 0; i < GraphSize; i++)
+                for (int j = i + 1; j < GraphSize; j++)
+                    covered.Add(new Tuple<int, int>(i, j));
+
+            covered.OrderByDescending(x => PheromoneMatrix[x.Item1, x.Item2]);
+            return covered;
+        }
+
+        List<Tuple<int, int>> BuildTree()
+        {
+            List<Tuple<int, int>> Edges = AllEdgesByPhero();
+            var BestN = Edges.Take(5 * GraphSize).ToList();
+            BestN.OrderBy(x => WeightMatrix[x.Item1, x.Item2]);
+
+            Edges.RemoveAll(x => BestN.Contains(x));
+
+            List<Tuple<int, int>> Tree = new List<Tuple<int, int>>();
+            Dictionary<int, int> Degrees = new Dictionary<int, int>();
+
+            while (Tree.Count != GraphSize - 1)
+            {
+                if (BestN.Count != 0)
+                {
+                    var e = BestN[0];
+                    BestN.Remove(e);
+                    if (!Helpers.ContainsEdge(Tree, e) && (!Degrees.ContainsKey(e.Item1) || Degrees[e.Item1] < MaxDegree) && (!Degrees.ContainsKey(e.Item1) || Degrees[e.Item2] < MaxDegree))
+                        Tree.Add(e);
+                }
+                else
+                {
+                    BestN = Edges.Take(5 * GraphSize).ToList();
+                    BestN.OrderBy(x => WeightMatrix[x.Item1, x.Item2]);
+                    Edges.RemoveAll(x => BestN.Contains(x));
+                }
+            }
+
+            return Tree;
+        }
+
+        void EnchanceBest()
+        {
+            foreach (var edge in MelhorSolucao)
+                PheromoneMatrix[edge.Item1, edge.Item2] *= Parameters.EnchanceFactor;
+        }
+
+        void NerfBest()
+        {
+            foreach (var edge in MelhorSolucao)
+                PheromoneMatrix[edge.Item1, edge.Item2] *= Parameters.EvapFactor;
+        }
+
+        void UpdateParameters()
+        {
+            Parameters.EvapFactor *= Parameters.EvapUpdate;
+            Parameters.EnchanceFactor *= Parameters.EnchanceUpdate;
         }
 
         [STAThread]
@@ -231,7 +329,18 @@ namespace Ants
             Console.WriteLine("Digite qual o grau máximo escolhido:");
             int grau = int.Parse(Console.ReadLine());
 
-            //TODO Implement Main Method
+
+            Program p = new Program(arquivo, ordem, grau);
+
+            //Profiling
+            DateTime time = DateTime.Now;
+
+            p.AntBasedAlgorithm();
+
+            TimeSpan decorrido = DateTime.Now.Subtract(time);
+
+            Console.WriteLine("Custo da Melhor Solução: {0}", p.MelhorCusto);
+
 
             Console.WriteLine();
 
@@ -242,7 +351,7 @@ namespace Ants
         }
     }
 
-    struct Ant
+    class Ant
     {
         private int atual;
         public int VerticeAtual
@@ -256,11 +365,11 @@ namespace Ants
         }
 
         public List<Tuple<int, int>> ArestasPercorridas { get; set; }
-        public List<int> VerticesVisitados { get; set;}
+        public List<int> VerticesVisitados { get; set; }
 
-        public Ant()
+        public Ant(int vertice)
         {
-            atual = 0;
+            atual = vertice;
             ArestasPercorridas = new List<Tuple<int, int>>();
             VerticesVisitados = new List<int>();
         }
