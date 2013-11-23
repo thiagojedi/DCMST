@@ -16,16 +16,16 @@ namespace Ants
         struct Parameters
         {
             // Número máximo de iterações do algoritmo
-            public const int MaxCycles = 1000;
+            public const int MaxCycles = 10000;
             // Número de iterações sem melhoras antes de reduzir os feromonios da melhor solução
-            public const int EscapeCycle = 10;
+            public const int EscapeCycle = 100;
             // Número de iterações sem melhoras antes de sair o algoritmo
-            public const int StopCycle = 25;
+            public const int StopCycle = 250;
             // Quantos nós uma formiga visita por ciclo
-            public const int AntSteps = 5;
+            public const int AntSteps = 75;
 
             // Fator de evaporação de feromonio
-            public static double EvapFactor = 0.25;
+            public static double EvapFactor = 0.2;
             // Fator de atualização da evaporação
             public const double EvapUpdate = 0.95;
 
@@ -35,7 +35,7 @@ namespace Ants
             public const double EnchanceUpdate = 1.05;
 
             // A cada quantos ciclos deve-se atualizar os fatores
-            public const int UpdateCycle = 500;
+            public const int UpdateCycle = 50;
         }
 
         // Parametros Auxiliares
@@ -146,16 +146,16 @@ namespace Ants
 
         public void AntBasedAlgorithm()
         {
+            // Coloca uma formiga em cada vertice
+            for (int i = 0; i < GraphSize; i++)
+                AntFarm.Add(new Ant(i));
+
             int NoImprov = 0;
             int Cycles = 0;
             bool StopCondition = false;
             while (!StopCondition)
             {
                 Cycles++;
-
-                // Coloca uma formiga em cada vertice
-                for (int i = 0; i < GraphSize; i++)
-                    AntFarm.Add(new Ant(i));
 
 
                 // Fase de Exploração
@@ -169,7 +169,7 @@ namespace Ants
                 int NewCost = Helpers.Cost(Tree, WeightMatrix);
                 if (NewCost < this.MelhorCusto)
                 {
-                    Helpers.ImprimeArvore(Tree);
+                    Helpers.ImprimeArvore(Tree, WeightMatrix);
                     MelhorSolucao = Tree;
                     MelhorCusto = NewCost;
                     NoImprov = 0;
@@ -260,14 +260,15 @@ namespace Ants
                     covered.Insert(x, edge);
                 }
             }
-
+            //foreach (var edge in covered)
+            //    Console.WriteLine("Cheiro daEdge ({0}-{1}): {2}", edge.Item1+1, edge.Item2+1, PheroOf[edge]);
             return covered;
         }
 
         List<Tuple<int, int>> BuildTree()
         {
             List<Tuple<int, int>> Edges = AllEdgesByPhero();
-            var BestN = Edges.Take(5).ToList();
+            var BestN = Edges.Take(GraphSize).ToList();
             Helpers.OrderByCost(ref BestN, WeightMatrix);
 
             Edges.RemoveAll(x => BestN.Contains(x));
@@ -275,7 +276,7 @@ namespace Ants
             List<Tuple<int, int>> Tree = new List<Tuple<int, int>>();
             Dictionary<int, int> Degrees = new Dictionary<int, int>();
 
-            while (Tree.Count != GraphSize - 1)
+            while (Degrees.Keys.Count < GraphSize || Tree.Count < GraphSize -1 )
             {
                 if (BestN.Count != 0)
                 {
@@ -297,8 +298,8 @@ namespace Ants
                 }
                 else
                 {
-                    BestN = Edges.Take(5 * GraphSize).ToList();
-                    BestN.OrderBy(x => WeightMatrix[x.Item1, x.Item2]);
+                    BestN = Edges.Take(GraphSize).ToList();
+                    Helpers.OrderByCost(ref BestN, WeightMatrix);
                     Edges.RemoveAll(x => BestN.Contains(x));
                 }
             }
@@ -356,6 +357,8 @@ namespace Ants
 
             Program p = new Program(arquivo, ordem, grau);
 
+            //Console.WriteLine("---------------------------------------");
+
             //Profiling
             DateTime time = DateTime.Now;
 
@@ -363,8 +366,9 @@ namespace Ants
 
             TimeSpan decorrido = DateTime.Now.Subtract(time);
 
+            Console.WriteLine("---------------------------------------");
             Console.WriteLine("Custo da Melhor Solução: {0}", p.MelhorCusto);
-
+            Console.WriteLine("Calculado em: {0}s", decorrido.TotalSeconds);
 
             Console.WriteLine();
 

@@ -86,13 +86,11 @@ namespace Ants
             return cost;
         }
 
-        public static void ImprimeArvore(List<Tuple<int, int>> t)
+        public static void ImprimeArvore(List<Tuple<int, int>> t, int?[,]w)
         {
             StringBuilder sb = new StringBuilder("Árvore gerada: ");
-            foreach (var edge in t)
-            {
-                sb.AppendFormat("{0}-{1}, ", edge.Item1+1, edge.Item2+1);
-            }
+            foreach (var e in t)
+                sb.AppendFormat("{0}-{1} ({2}), ", e.Item1+1, e.Item2+1, w[e.Item1, e.Item2]);
             Console.WriteLine(sb.ToString());
         }
 
