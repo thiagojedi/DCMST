@@ -16,16 +16,16 @@ namespace Ants
         struct Parameters
         {
             // Número máximo de iterações do algoritmo
-            public const int MaxCycles = 10000;
+            public const int MaxCycles = 1000;
             // Número de iterações sem melhoras antes de reduzir os feromonios da melhor solução
-            public const int EscapeCycle = 100;
+            public const int EscapeCycle = 10;
             // Número de iterações sem melhoras antes de sair o algoritmo
-            public const int StopCycle = 2500;
-            // Quantos nós uma formiga vizita por ciclo
-            public const int AntSteps = 75;
+            public const int StopCycle = 25;
+            // Quantos nós uma formiga visita por ciclo
+            public const int AntSteps = 5;
 
             // Fator de evaporação de feromonio
-            public static double EvapFactor = 0.5;
+            public static double EvapFactor = 0.25;
             // Fator de atualização da evaporação
             public const double EvapUpdate = 0.95;
 
@@ -54,7 +54,7 @@ namespace Ants
         List<Tuple<int, int>> MelhorSolucao;
         int MelhorCusto;
 
-        Ant[] AntFarm;
+        List<Ant> AntFarm;
 
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace Ants
             this.UpdateMatrix = Helpers.MatrizZero(graph_size);
 
             MelhorCusto = int.MaxValue;
-            this.AntFarm = new Ant[graph_size];
+            this.AntFarm = new List<Ant>();
 
 
             InitializeWeights(file);
@@ -146,7 +146,6 @@ namespace Ants
 
         public void AntBasedAlgorithm()
         {
-            
             int NoImprov = 0;
             int Cycles = 0;
             bool StopCondition = false;
@@ -156,7 +155,7 @@ namespace Ants
 
                 // Coloca uma formiga em cada vertice
                 for (int i = 0; i < GraphSize; i++)
-                    AntFarm[i] = new Ant(i);
+                    AntFarm.Add(new Ant(i));
 
 
                 // Fase de Exploração
@@ -170,6 +169,7 @@ namespace Ants
                 int NewCost = Helpers.Cost(Tree, WeightMatrix);
                 if (NewCost < this.MelhorCusto)
                 {
+                    Helpers.ImprimeArvore(Tree);
                     MelhorSolucao = Tree;
                     MelhorCusto = NewCost;
                     NoImprov = 0;
@@ -213,8 +213,8 @@ namespace Ants
                 else
                 {
                     a.VerticeAtual = nextEdge.Item2;
-                    a.ArestasPercorridas.Add(nextEdge);
                     MarkForUpdate(nextEdge);
+                    break;
                 }
             }
         }
@@ -242,20 +242,33 @@ namespace Ants
         List<Tuple<int, int>> AllEdgesByPhero()
         {
             List<Tuple<int, int>> covered = new List<Tuple<int, int>>();
+            Dictionary<Tuple<int,int>, double> PheroOf = new Dictionary<Tuple<int,int>,double>();
 
             for (int i = 0; i < GraphSize; i++)
                 for (int j = i + 1; j < GraphSize; j++)
-                    covered.Add(new Tuple<int, int>(i, j));
+                    PheroOf.Add(new Tuple<int, int>(i, j), (double)PheromoneMatrix[i, j]);
 
-            covered.OrderByDescending(x => PheromoneMatrix[x.Item1, x.Item2]);
+            foreach (var edge in PheroOf.Keys)
+            {
+                if (covered.Count == 0)
+                    covered.Add(edge);
+                else
+                {
+                    int x = 0;
+                    while (x < covered.Count && PheroOf[covered[x]] > PheroOf[edge])
+                        x++;
+                    covered.Insert(x, edge);
+                }
+            }
+
             return covered;
         }
 
         List<Tuple<int, int>> BuildTree()
         {
             List<Tuple<int, int>> Edges = AllEdgesByPhero();
-            var BestN = Edges.Take(5 * GraphSize).ToList();
-            BestN.OrderBy(x => WeightMatrix[x.Item1, x.Item2]);
+            var BestN = Edges.Take(5).ToList();
+            Helpers.OrderByCost(ref BestN, WeightMatrix);
 
             Edges.RemoveAll(x => BestN.Contains(x));
 
@@ -268,8 +281,19 @@ namespace Ants
                 {
                     var e = BestN[0];
                     BestN.Remove(e);
-                    if (!Helpers.ContainsEdge(Tree, e) && (!Degrees.ContainsKey(e.Item1) || Degrees[e.Item1] < MaxDegree) && (!Degrees.ContainsKey(e.Item1) || Degrees[e.Item2] < MaxDegree))
+                    if (!Helpers.ContainsEdge(Tree, e) && (!Degrees.ContainsKey(e.Item1) || Degrees[e.Item1] < MaxDegree) && (!Degrees.ContainsKey(e.Item2) || Degrees[e.Item2] < MaxDegree))
+                    {
                         Tree.Add(e);
+                        if (!Degrees.ContainsKey(e.Item1))
+                            Degrees.Add(e.Item1, 1);
+                        else
+                            Degrees[e.Item1] += 1;
+                        if (!Degrees.ContainsKey(e.Item2))
+                            Degrees.Add(e.Item2, 1);
+                        else
+                            Degrees[e.Item2] += 1;
+
+                    }
                 }
                 else
                 {
@@ -360,18 +384,17 @@ namespace Ants
             set
             {
                 atual = value;
-                VerticesVisitados.Add(atual);
+                VerticesVisitados.Add(value);
             }
         }
 
-        public List<Tuple<int, int>> ArestasPercorridas { get; set; }
         public List<int> VerticesVisitados { get; set; }
 
         public Ant(int vertice)
         {
             atual = vertice;
-            ArestasPercorridas = new List<Tuple<int, int>>();
             VerticesVisitados = new List<int>();
+            VerticesVisitados.Add(vertice);
         }
     }
 }

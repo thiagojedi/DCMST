@@ -85,6 +85,38 @@ namespace Ants
             }
             return cost;
         }
+
+        public static void ImprimeArvore(List<Tuple<int, int>> t)
+        {
+            StringBuilder sb = new StringBuilder("Árvore gerada: ");
+            foreach (var edge in t)
+            {
+                sb.AppendFormat("{0}-{1}, ", edge.Item1+1, edge.Item2+1);
+            }
+            Console.WriteLine(sb.ToString());
+        }
+
+        public static void OrderByCost(ref List<Tuple<int, int>> el, int?[,] w)
+        {
+            Dictionary<Tuple<int, int>, int> d = new Dictionary<Tuple<int, int>, int>();
+            foreach (var e in el)
+                d.Add(e, (int)w[e.Item1, e.Item2]);
+
+            List<Tuple<int, int>> nl = new List<Tuple<int, int>>();
+            foreach (var e in d.Keys)
+            {
+                if (nl.Count == 0)
+                    nl.Add(e);
+                else
+                {
+                    int i = 0;
+                    while (i < nl.Count && d[e] > d[nl[i]])
+                        i++;
+                    nl.Insert(i, e);
+                }
+            }
+            el = nl;
+        }
     }
 
 
