@@ -23,7 +23,7 @@ namespace Ants
             double total = 0.0;
             for (int x = 0; x < phero.GetLength(0); x++)
             {
-                prob[x] = phero[i, x] == null ? 0 : (double)phero[i, x];
+                prob[x] = phero[i, x] ?? 0;
                 total += prob[x];
             }
 
@@ -86,34 +86,44 @@ namespace Ants
             return cost;
         }
 
-        public static void ImprimeArvore(List<Tuple<int, int>> t, int?[,]w)
+        public static void ImprimeArvore(List<Tuple<int, int>> t, int?[,] w)
         {
             StringBuilder sb = new StringBuilder("Árvore gerada: ");
             foreach (var e in t)
-                sb.AppendFormat("{0}-{1} ({2}), ", e.Item1+1, e.Item2+1, w[e.Item1, e.Item2]);
+                sb.AppendFormat("{0}-{1} ({2}), ", e.Item1 + 1, e.Item2 + 1, w[e.Item1, e.Item2]);
             Console.WriteLine(sb.ToString());
         }
 
         public static void OrderByCost(ref List<Tuple<int, int>> el, int?[,] w)
         {
-            Dictionary<Tuple<int, int>, int> d = new Dictionary<Tuple<int, int>, int>();
-            foreach (var e in el)
-                d.Add(e, (int)w[e.Item1, e.Item2]);
+            int l = 0, r = el.Count - 1;
+            QSort<int>(ref el, w, l, r);
+        }
 
-            List<Tuple<int, int>> nl = new List<Tuple<int, int>>();
-            foreach (var e in d.Keys)
+        public static void QSort<T>(ref List<Tuple<int, int>> el, T?[,] w, int l, int r) where T:struct,IComparable
+        {
+            int left = l, right = r;
+            int mid = (left + right) / 2;
+            T pivot = (T)w[el[mid].Item1, el[mid].Item2];
+            while (left < right)
             {
-                if (nl.Count == 0)
-                    nl.Add(e);
-                else
+                while (((T)w[el[left].Item1, el[left].Item2]).CompareTo(pivot) < 0)
+                    left++;
+                while ((((T)w[el[right].Item1, el[right].Item2]).CompareTo(pivot) > 0))
+                    right--;
+                if (left <= right)
                 {
-                    int i = 0;
-                    while (i < nl.Count && d[e] > d[nl[i]])
-                        i++;
-                    nl.Insert(i, e);
+                    var aux = el[left];
+                    el[left] = el[right];
+                    el[right] = aux;
+                    left++;
+                    right--;
                 }
             }
-            el = nl;
+            if (right > l)
+                QSort<T>(ref el, w, l, right);
+            if (left < r)
+                QSort<T>(ref el, w, left, r);
         }
     }
 

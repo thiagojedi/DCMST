@@ -133,14 +133,18 @@ namespace Ants
         /// <returns>Quantidade de Feromônio</returns>
         double InitialPhero(int i, int j)
         {
-            int a = i, b = j;
-            if (a > b)
+            int a, b;
+            if (i < j)
             {
-                // XOR Swap
-                a = a ^ b;
-                b = a ^ b;
-                a = a ^ b;
+                a = i; 
+                b = j;
             }
+            else
+            {
+                a = j; 
+                b = i;
+            }
+
             return (MaxWeight - (int)WeightMatrix[a, b]) + (MaxWeight - MinWeight) / 3;
         }
 
@@ -169,7 +173,7 @@ namespace Ants
                 int NewCost = Helpers.Cost(Tree, WeightMatrix);
                 if (NewCost < this.MelhorCusto)
                 {
-                    Helpers.ImprimeArvore(Tree, WeightMatrix);
+                    //Helpers.ImprimeArvore(Tree, WeightMatrix);
                     MelhorSolucao = Tree;
                     MelhorCusto = NewCost;
                     NoImprov = 0;
@@ -242,24 +246,15 @@ namespace Ants
         List<Tuple<int, int>> AllEdgesByPhero()
         {
             List<Tuple<int, int>> covered = new List<Tuple<int, int>>();
-            Dictionary<Tuple<int,int>, double> PheroOf = new Dictionary<Tuple<int,int>,double>();
+            Dictionary<Tuple<int, int>, double> PheroOf = new Dictionary<Tuple<int, int>, double>();
 
             for (int i = 0; i < GraphSize; i++)
                 for (int j = i + 1; j < GraphSize; j++)
-                    PheroOf.Add(new Tuple<int, int>(i, j), (double)PheromoneMatrix[i, j]);
+                    //PheroOf.Add(new Tuple<int, int>(i, j), (double)PheromoneMatrix[i, j]);
+                    covered.Add(new Tuple<int, int>(i, j));
 
-            foreach (var edge in PheroOf.Keys)
-            {
-                if (covered.Count == 0)
-                    covered.Add(edge);
-                else
-                {
-                    int x = 0;
-                    while (x < covered.Count && PheroOf[covered[x]] > PheroOf[edge])
-                        x++;
-                    covered.Insert(x, edge);
-                }
-            }
+            Helpers.QSort<double>(ref covered, PheromoneMatrix, 0, covered.Count - 1);
+            
             //foreach (var edge in covered)
             //    Console.WriteLine("Cheiro daEdge ({0}-{1}): {2}", edge.Item1+1, edge.Item2+1, PheroOf[edge]);
             return covered;
@@ -268,7 +263,7 @@ namespace Ants
         List<Tuple<int, int>> BuildTree()
         {
             List<Tuple<int, int>> Edges = AllEdgesByPhero();
-            var BestN = Edges.Take(GraphSize).ToList();
+            var BestN = Edges.Take(GraphSize / 9).ToList();
             Helpers.OrderByCost(ref BestN, WeightMatrix);
 
             Edges.RemoveAll(x => BestN.Contains(x));
@@ -276,7 +271,7 @@ namespace Ants
             List<Tuple<int, int>> Tree = new List<Tuple<int, int>>();
             Dictionary<int, int> Degrees = new Dictionary<int, int>();
 
-            while (Degrees.Keys.Count < GraphSize || Tree.Count < GraphSize -1 )
+            while (Tree.Count < GraphSize - 1)
             {
                 if (BestN.Count != 0)
                 {
@@ -298,7 +293,9 @@ namespace Ants
                 }
                 else
                 {
-                    BestN = Edges.Take(GraphSize).ToList();
+                    BestN = Edges.Take(GraphSize / 9).ToList();
+                    if (BestN.Count == 0)
+                        break;
                     Helpers.OrderByCost(ref BestN, WeightMatrix);
                     Edges.RemoveAll(x => BestN.Contains(x));
                 }
@@ -369,6 +366,10 @@ namespace Ants
             Console.WriteLine("---------------------------------------");
             Console.WriteLine("Custo da Melhor Solução: {0}", p.MelhorCusto);
             Console.WriteLine("Calculado em: {0}s", decorrido.TotalSeconds);
+
+            Console.WriteLine();
+
+            Helpers.ImprimeArvore(p.MelhorSolucao, p.WeightMatrix);
 
             Console.WriteLine();
 
