@@ -44,5 +44,16 @@ namespace Ants
 
             return new Tuple<int, int>(i, j);
         }
+
+        public static int[,] MatrizZero(int graph_size)
+        {
+            int[,] matriz = new int[graph_size, graph_size];
+            for (int i = 0; i < graph_size; i++)
+                for (int j = 0; j < graph_size; j++)
+                {
+                    matriz[i, j] = 0;
+                }
+            return matriz;
+        }
     }
 }

@@ -48,9 +48,13 @@ namespace Ants
         int GraphSize;
         int?[,] WeightMatrix;
         double?[,] PheromoneMatrix;
+        int[,] UpdateMatrix;
 
-        Ant[] ants;
+        List<Tuple<int, int>> MelhorSolução;
+        int MelhorCusto;
         
+        Ant[] AntFarm;
+
 
         /// <summary>
         /// Construtor padrão
@@ -59,12 +63,16 @@ namespace Ants
         /// <param name="graph_size">Número de Vértices no Grafo</param>
         public Program(string file, int graph_size)
         {
+            this.MaxWeight = int.MinValue;
+            this.MinWeight = int.MaxValue;
             this.GraphSize = graph_size;
             this.WeightMatrix = new int?[graph_size, graph_size];
             this.PheromoneMatrix = new double?[graph_size, graph_size];
-            this.ants = new Ant[graph_size];
-            this.MaxWeight = int.MinValue;
-            this.MinWeight = int.MaxValue;
+            this.UpdateMatrix = Helpers.MatrizZero(graph_size);
+
+            MelhorCusto = int.MaxValue;
+            this.AntFarm = new Ant[graph_size];
+
 
             InitializeWeights(file);
             InitializePheromones();
@@ -134,6 +142,52 @@ namespace Ants
             return (MaxWeight - (int)WeightMatrix[a, b]) + (MaxWeight - MinWeight) / 3;
         }
 
+        public void ReleaseTheAnts()
+        {
+            // Coloca uma formiga em cada vertice
+            for (int i = 0; i < GraphSize; i++)
+                AntFarm[i].VerticeAtual = i;
+
+            bool parada = false;
+            while (!parada)
+            {
+                // Fase de Exploração
+                for (int s = 0; s < Parameters.AntSteps; s++)
+                {
+                    foreach (var ant in AntFarm)
+                    {
+                        
+                    }
+                }
+            }
+        }
+
+        private void MoveAnt(Ant a)
+        {
+            Random r = new Random();
+            int tentativas = 0;
+            while (tentativas < 5)
+            {
+                Tuple<int, int> nextEdge = Helpers.SelectEdge(a.VerticeAtual, PheromoneMatrix);
+                if (a.VerticesVisitados.Contains(nextEdge.Item2))
+                    tentativas++;
+                else
+                {
+                    a.VerticeAtual = nextEdge.Item2;
+                    a.ArestasPercorridas.Add(nextEdge);
+                }
+
+            }
+        }
+
+        private void MarkForUpdate(Tuple<int, int> edge)
+        {
+            if (edge.Item1 < edge.Item2)
+                UpdateMatrix[edge.Item1, edge.Item2] += 1;
+            else
+                UpdateMatrix[edge.Item2, edge.Item1] += 1;
+        }
+
         [STAThread]
         static void Main(string[] args)
         {
@@ -174,10 +228,27 @@ namespace Ants
         }
     }
 
-    protected struct Ant
+    struct Ant
     {
-        public int VerticeAtual { get; set; }
-        public List<Tuple<int,int>> ArestasPercorridas { get; set; }
-        public List<int> VerticesVisitados { get; set; }
+        private int atual;
+        public int VerticeAtual
+        {
+            get { return atual; }
+            set
+            {
+                atual = value;
+                VerticesVisitados.Add(atual);
+            }
+        }
+
+        public List<Tuple<int, int>> ArestasPercorridas { get; set; }
+        public List<int> VerticesVisitados { get; set;}
+
+        public Ant()
+        {
+            atual = 0;
+            ArestasPercorridas = new List<Tuple<int, int>>();
+            VerticesVisitados = new List<int>();
+        }
     }
 }
