@@ -37,11 +37,11 @@ namespace Ants
         }
 
         /// <summary>
-        /// Calcula quanto deve ser adicionado de Feromônio por formiga
+        /// Calcula a quantidade inicial de Feromônio numa aresta
         /// </summary>
         /// <param name="edge">Aresta percorrida</param>
-        /// <returns>Incremento de Feromônio</returns>
-        double AddedPher(Tuple<int,int> edge)
+        /// <returns>Quantidade de Feromônio</returns>
+        double InitialPher(Tuple<int,int> edge)
         {
             int a = edge.Item1, b = edge.Item2;
             if (a > b)
