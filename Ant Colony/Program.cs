@@ -154,9 +154,11 @@ namespace Ants
                 // Fase de Exploração
                 for (int s = 0; s < Parameters.AntSteps; s++)
                 {
+                    if (s == Parameters.AntSteps / 3 || s == 2 * Parameters.AntSteps / 3)
+                        UpdatePheros();
                     foreach (var ant in AntFarm)
                     {
-                        
+                        MoveAnt(ant);
                     }
                 }
             }
@@ -175,17 +177,29 @@ namespace Ants
                 {
                     a.VerticeAtual = nextEdge.Item2;
                     a.ArestasPercorridas.Add(nextEdge);
+                    MarkForUpdate(nextEdge);
                 }
-
             }
         }
 
         private void MarkForUpdate(Tuple<int, int> edge)
         {
-            if (edge.Item1 < edge.Item2)
                 UpdateMatrix[edge.Item1, edge.Item2] += 1;
-            else
                 UpdateMatrix[edge.Item2, edge.Item1] += 1;
+        }
+
+        private void UpdatePheros()
+        {
+            for (int i = 0; i < GraphSize; i++)
+                for (int j = i+1; j < GraphSize; j++)
+                {
+                    double updatedPhero = (1 - Parameters.EvapFactor) * (double)PheromoneMatrix[i, j] + UpdateMatrix[i, j] * InitialPher(i, j);
+                    if (updatedPhero > MaxPhero)
+                        updatedPhero = MaxPhero - InitialPher(i,j);
+                    if (updatedPhero < MinPhero)
+                        updatedPhero = MinPhero + InitialPher(i, j);
+                    PheromoneMatrix[i, j] = updatedPhero;
+                }
         }
 
         [STAThread]
