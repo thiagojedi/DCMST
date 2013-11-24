@@ -134,12 +134,12 @@ namespace Ants
             int a, b;
             if (i < j)
             {
-                a = i; 
+                a = i;
                 b = j;
             }
             else
             {
-                a = j; 
+                a = j;
                 b = i;
             }
 
@@ -264,37 +264,40 @@ namespace Ants
         List<Tuple<int, int>> BuildTree()
         {
             List<Tuple<int, int>> Edges = AllEdgesByPhero();
-            var BestN = Edges.Take(5*GraphSize).ToList();
+            var BestN = Edges.Take(5 * GraphSize).ToList();
             Helpers.OrderByCost(ref BestN, WeightMatrix);
 
             Edges.RemoveAll(x => BestN.Contains(x));
 
-            List<Tuple<int, int>> Tree = new List<Tuple<int, int>>();
+            List<Tree> forest = new List<Tree>();
             Dictionary<int, int> Degrees = new Dictionary<int, int>();
+            for (int i = 0; i < GraphSize; i++)
+            {
+                forest.Add(new Tree(i));
+                Degrees.Add(i, 0);
+            }
 
-            while (Degrees.Keys.Count < GraphSize)
+            while (forest.First().vertices.Count < GraphSize)
             {
                 if (BestN.Count != 0)
                 {
                     var e = BestN[0];
                     BestN.Remove(e);
-                    if (!Helpers.ContainsEdge(Tree, e) && (!Degrees.ContainsKey(e.Item1) || Degrees[e.Item1] < MaxDegree) && (!Degrees.ContainsKey(e.Item2) || Degrees[e.Item2] < MaxDegree))
-                    {
-                        Tree.Add(e);
-                        if (!Degrees.ContainsKey(e.Item1))
-                            Degrees.Add(e.Item1, 1);
-                        else
-                            Degrees[e.Item1] += 1;
-                        if (!Degrees.ContainsKey(e.Item2))
-                            Degrees.Add(e.Item2, 1);
-                        else
-                            Degrees[e.Item2] += 1;
 
+                    Tree t1 = forest.Find(x => x.vertices.Contains(e.Item1));
+                    Tree t2 = forest.Find(x => x.vertices.Contains(e.Item2));
+                    if (t1.Root != t2.Root && Degrees[e.Item1] < MaxDegree && Degrees[e.Item2] < MaxDegree)
+                    {
+                        t1.AddTree(t2);
+                        t1.edges.Add(e);
+                        forest.Remove(t2);
+                        Degrees[e.Item1]++;
+                        Degrees[e.Item2]++;
                     }
                 }
                 else
                 {
-                    BestN = Edges.Take(5*GraphSize).ToList();
+                    BestN = Edges.Take(5 * GraphSize).ToList();
                     if (BestN.Count == 0)
                         break;
                     Helpers.OrderByCost(ref BestN, WeightMatrix);
@@ -302,7 +305,7 @@ namespace Ants
                 }
             }
 
-            return Tree;
+            return forest.First().edges;
         }
 
         void EnchanceBest()
@@ -398,9 +401,29 @@ namespace Ants
 
         public Ant(int vertice)
         {
-            atual = vertice;
             VerticesVisitados = new List<int>();
-            VerticesVisitados.Add(vertice);
+            VerticeAtual = vertice;
+        }
+    }
+
+    class Tree
+    {
+        public int Root { get; private set; }
+        public List<int> vertices { get; private set; }
+        public List<Tuple<int, int>> edges { get; private set; }
+
+        public Tree(int root)
+        {
+            vertices = new List<int>();
+            edges = new List<Tuple<int, int>>();
+
+            this.Root = root;
+            vertices.Add(root);
+        }
+        public void AddTree(Tree t)
+        {
+            this.edges.AddRange(t.edges);
+            this.vertices.AddRange(t.vertices);
         }
     }
 }
