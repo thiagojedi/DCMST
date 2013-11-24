@@ -10,8 +10,6 @@ namespace Ants
 {
     class Program
     {
-
-
         // Algorithm Parameters
         struct Parameters
         {
@@ -22,10 +20,10 @@ namespace Ants
             // Número de iterações sem melhoras antes de sair o algoritmo
             public const int StopCycle = 250;
             // Quantos nós uma formiga visita por ciclo
-            public const int AntSteps = 75;
+            public const int AntSteps = 2;
 
             // Fator de evaporação de feromonio
-            public static double EvapFactor = 0.2;
+            public static double EvapFactor = 0.5;
             // Fator de atualização da evaporação
             public const double EvapUpdate = 0.95;
 
@@ -150,9 +148,6 @@ namespace Ants
 
         public void AntBasedAlgorithm()
         {
-            // Coloca uma formiga em cada vertice
-            for (int i = 0; i < GraphSize; i++)
-                AntFarm.Add(new Ant(i));
 
             int NoImprov = 0;
             int Cycles = 0;
@@ -161,6 +156,10 @@ namespace Ants
             {
                 Cycles++;
 
+                // Coloca uma formiga em cada vertice
+                AntFarm = new List<Ant>();
+                for (int i = 0; i < GraphSize; i++)
+                    AntFarm.Add(new Ant(i));
 
                 // Fase de Exploração
                 ReleaseTheAnts();
@@ -181,7 +180,7 @@ namespace Ants
                 else
                     NoImprov += 1;
 
-                EnchanceBest();
+                //EnchanceBest();
 
                 // Verificações
                 if (NoImprov == Parameters.EscapeCycle)
@@ -250,20 +249,22 @@ namespace Ants
 
             for (int i = 0; i < GraphSize; i++)
                 for (int j = i + 1; j < GraphSize; j++)
-                    //PheroOf.Add(new Tuple<int, int>(i, j), (double)PheromoneMatrix[i, j]);
+                {
+                    PheroOf.Add(new Tuple<int, int>(i, j), (double)PheromoneMatrix[i, j]);
                     covered.Add(new Tuple<int, int>(i, j));
+                }
 
             Helpers.QSort<double>(ref covered, PheromoneMatrix, 0, covered.Count - 1);
-            
-            //foreach (var edge in covered)
-            //    Console.WriteLine("Cheiro daEdge ({0}-{1}): {2}", edge.Item1+1, edge.Item2+1, PheroOf[edge]);
+
+            covered.Reverse();
+
             return covered;
         }
 
         List<Tuple<int, int>> BuildTree()
         {
             List<Tuple<int, int>> Edges = AllEdgesByPhero();
-            var BestN = Edges.Take(GraphSize / 9).ToList();
+            var BestN = Edges.Take(5*GraphSize).ToList();
             Helpers.OrderByCost(ref BestN, WeightMatrix);
 
             Edges.RemoveAll(x => BestN.Contains(x));
@@ -271,7 +272,7 @@ namespace Ants
             List<Tuple<int, int>> Tree = new List<Tuple<int, int>>();
             Dictionary<int, int> Degrees = new Dictionary<int, int>();
 
-            while (Tree.Count < GraphSize - 1)
+            while (Degrees.Keys.Count < GraphSize)
             {
                 if (BestN.Count != 0)
                 {
@@ -293,7 +294,7 @@ namespace Ants
                 }
                 else
                 {
-                    BestN = Edges.Take(GraphSize / 9).ToList();
+                    BestN = Edges.Take(5*GraphSize).ToList();
                     if (BestN.Count == 0)
                         break;
                     Helpers.OrderByCost(ref BestN, WeightMatrix);
