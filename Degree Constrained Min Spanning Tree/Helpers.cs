@@ -162,25 +162,66 @@ namespace DCMSC_Exact
         public static bool Possivel(List<Tuple<int, int>> l, int d, int o)
         {
             Dictionary<int, int> v = new Dictionary<int, int>();
+
+            for (int i = 0; i < o; i++)
+                v.Add(i, 0);
+
             foreach (var e in l)
             {
-                if (!v.ContainsKey(e.Item1))
-                    v.Add(e.Item1, 1);
-                else
-                    v[e.Item1] += 1;
-                if (!v.ContainsKey(e.Item2))
-                    v.Add(e.Item2, 1);
-                else
-                    v[e.Item2] += 1;
+                v[e.Item1]++;
+                v[e.Item2]++;
+
                 if (v[e.Item1] > d || v[e.Item2] > d)
                     return false;
             }
-            for (int i = 0; i < o; i++)
-            {
-                if (!v.ContainsKey(i))
-                    return false;
-            }
             return true;
+        }
+
+        public static void QSort<T>(List<Tuple<int, int>> el, T?[,] w, int l, int r) where T : struct,IComparable
+        {
+            int left = l, right = r;
+            int mid = (left + right) / 2;
+            T pivot = (T)w[el[mid].Item1, el[mid].Item2];
+            while (left < right)
+            {
+                while (((T)w[el[left].Item1, el[left].Item2]).CompareTo(pivot) < 0)
+                    left++;
+                while ((((T)w[el[right].Item1, el[right].Item2]).CompareTo(pivot) > 0))
+                    right--;
+                if (left <= right)
+                {
+                    var aux = el[left];
+                    el[left] = el[right];
+                    el[right] = aux;
+                    left++;
+                    right--;
+                }
+            }
+            if (right > l)
+                QSort<T>(el, w, l, right);
+            if (left < r)
+                QSort<T>(el, w, left, r);
+        }
+    }
+
+    class Tree
+    {
+        public int Root { get; private set; }
+        public List<int> vertices { get; private set; }
+        public List<Tuple<int, int>> edges { get; private set; }
+
+        public Tree(int root)
+        {
+            vertices = new List<int>();
+            edges = new List<Tuple<int, int>>();
+
+            this.Root = root;
+            vertices.Add(root);
+        }
+        public void AddTree(Tree t)
+        {
+            this.edges.AddRange(t.edges);
+            this.vertices.AddRange(t.vertices);
         }
     }
 }
