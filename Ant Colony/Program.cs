@@ -20,7 +20,7 @@ namespace Ants
             // Número de iterações sem melhoras antes de sair o algoritmo
             public const int StopCycle = 250;
             // Quantos nós uma formiga visita por ciclo
-            public const int AntSteps = 2;
+            public const int AntSteps = 30;
 
             // Fator de evaporação de feromonio
             public static double EvapFactor = 0.5;
@@ -33,7 +33,7 @@ namespace Ants
             public const double EnchanceUpdate = 1.05;
 
             // A cada quantos ciclos deve-se atualizar os fatores
-            public const int UpdateCycle = 50;
+            public const int UpdateCycle = 500;
         }
 
         // Parametros Auxiliares
@@ -131,23 +131,16 @@ namespace Ants
         /// <returns>Quantidade de Feromônio</returns>
         double InitialPhero(int i, int j)
         {
-            int a, b;
-            if (i < j)
-            {
-                a = i;
-                b = j;
-            }
-            else
-            {
-                a = j;
-                b = i;
-            }
-
-            return (MaxWeight - (int)WeightMatrix[a, b]) + (MaxWeight - MinWeight) / 3;
+            return (MaxWeight - (int)WeightMatrix[i, j]) + (MaxWeight - MinWeight) / 3;
         }
 
         public void AntBasedAlgorithm()
         {
+
+            // Coloca uma formiga em cada vertice
+            AntFarm = new List<Ant>();
+            for (int i = 0; i < GraphSize; i++)
+                AntFarm.Add(new Ant(i));
 
             int NoImprov = 0;
             int Cycles = 0;
@@ -157,9 +150,8 @@ namespace Ants
                 Cycles++;
 
                 // Coloca uma formiga em cada vertice
-                AntFarm = new List<Ant>();
-                for (int i = 0; i < GraphSize; i++)
-                    AntFarm.Add(new Ant(i));
+                foreach (Ant ant in AntFarm)
+                    ant.ClearMarked();
 
                 // Fase de Exploração
                 ReleaseTheAnts();
@@ -171,8 +163,8 @@ namespace Ants
 
                 int NewCost = Helpers.Cost(Tree, WeightMatrix);
                 if (NewCost < this.MelhorCusto)
-                {
-                    //Helpers.ImprimeArvore(Tree, WeightMatrix);
+                {                    
+                    Console.Write(".");
                     MelhorSolucao = Tree;
                     MelhorCusto = NewCost;
                     NoImprov = 0;
@@ -180,7 +172,7 @@ namespace Ants
                 else
                     NoImprov += 1;
 
-                //EnchanceBest();
+                EnchanceBest();
 
                 // Verificações
                 if (NoImprov == Parameters.EscapeCycle)
@@ -190,6 +182,7 @@ namespace Ants
                     UpdateParameters();
 
                 StopCondition = NoImprov == Parameters.StopCycle || Cycles == Parameters.MaxCycles;
+                //Console.WriteLine("Iteração: {0}", Cycles);
             }
         }
 
@@ -249,15 +242,11 @@ namespace Ants
 
             for (int i = 0; i < GraphSize; i++)
                 for (int j = i + 1; j < GraphSize; j++)
-                {
-                    PheroOf.Add(new Tuple<int, int>(i, j), (double)PheromoneMatrix[i, j]);
                     covered.Add(new Tuple<int, int>(i, j));
-                }
 
             Helpers.QSort<double>(ref covered, PheromoneMatrix, 0, covered.Count - 1);
 
             covered.Reverse();
-
             return covered;
         }
 
@@ -329,6 +318,7 @@ namespace Ants
         [STAThread]
         static void Main(string[] args)
         {
+        Start:
             Console.WriteLine("AGM Grau Restrito - Ataque das Formigas ");
             Console.WriteLine("---------------------------------------");
 
@@ -358,7 +348,8 @@ namespace Ants
 
             Program p = new Program(arquivo, ordem, grau);
 
-            //Console.WriteLine("---------------------------------------");
+            Console.WriteLine("---------------------------------------");
+            Console.Write("Calculando");
 
             //Profiling
             DateTime time = DateTime.Now;
@@ -367,6 +358,7 @@ namespace Ants
 
             TimeSpan decorrido = DateTime.Now.Subtract(time);
 
+            Console.WriteLine();
             Console.WriteLine("---------------------------------------");
             Console.WriteLine("Custo da Melhor Solução: {0}", p.MelhorCusto);
             Console.WriteLine("Calculado em: {0}s", decorrido.TotalSeconds);
@@ -377,9 +369,11 @@ namespace Ants
 
             Console.WriteLine();
 
-            Console.WriteLine("Pressione ENTER para sair");
+            Console.WriteLine("Deseja realizar outro teste? (S/N)");
 
-            Console.Read();
+            string opcao = Console.ReadLine();
+            if (opcao == "S" || opcao == "s")
+                goto Start;
 
         }
     }
@@ -403,6 +397,12 @@ namespace Ants
         {
             VerticesVisitados = new List<int>();
             VerticeAtual = vertice;
+        }
+
+        public void ClearMarked()
+        {
+            VerticesVisitados = new List<int>();
+            VerticesVisitados.Add(VerticeAtual);
         }
     }
 
